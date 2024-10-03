@@ -44,6 +44,13 @@ def get_contact_list(txt, page_length=20, extra_filters: str | None = None) -> l
 
 
 def get_system_managers():
+	if frappe.is_oracledb:
+		return frappe.db.sql_list(
+		f"""select "parent" FROM {frappe.conf.db_name}."tabHas Role"
+		WHERE "role"='System Manager'
+		AND "parent"!='Administrator'
+		AND "parent" IN (SELECT "email" FROM {frappe.conf.db_name}."tabUser" WHERE "enabled"=1)"""
+	)
 	return frappe.db.sql_list(
 		"""select parent FROM `tabHas Role`
 		WHERE role='System Manager'
@@ -54,18 +61,32 @@ def get_system_managers():
 
 @frappe.whitelist()
 def relink(name, reference_doctype=None, reference_name=None):
-	frappe.db.sql(
-		"""update
-			`tabCommunication`
-		set
-			reference_doctype = %s,
-			reference_name = %s,
-			status = "Linked"
-		where
-			communication_type = "Communication" and
-			name = %s""",
-		(reference_doctype, reference_name, name),
-	)
+	if frappe.is_oracledb:
+		frappe.db.sql(
+			f"""update
+				{frappe.conf.db_name}."tabCommunication"
+			set
+				"reference_doctype" = '{reference_doctype}',
+				"reference_name" = '{reference_name}',
+				"status" = "Linked"
+			where
+				"communication_type" = "Communication" and
+				"name" = '{name}'""",
+			(),
+		)
+	else:
+		frappe.db.sql(
+			"""update
+				`tabCommunication`
+			set
+				reference_doctype = %s,
+				reference_name = %s,
+				status = "Linked"
+			where
+				communication_type = "Communication" and
+				name = %s""",
+			(reference_doctype, reference_name, name),
+		)
 
 
 @frappe.whitelist()

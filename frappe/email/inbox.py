@@ -66,12 +66,21 @@ def create_email_flag_queue(names, action):
 		# check if states are correct
 		if (action == "Read" and seen_status == 0) or (action == "Unread" and seen_status == 1):
 			create_new = True
-			email_flag_queue = frappe.db.sql(
-				"""select name, action from `tabEmail Flag Queue`
-				where communication = %(name)s and is_completed=0""",
-				{"name": name},
+
+			if frappe.is_oracledb:
+				email_flag_queue = frappe.db.sql(
+				f"""select "name", "action" from {frappe.conf.db_name}."tabEmail Flag Queue"
+				where "communication" = '{name}' and "is_completed"=0""",
+				[],
 				as_dict=True,
 			)
+			else:
+				email_flag_queue = frappe.db.sql(
+					"""select name, action from `tabEmail Flag Queue`
+					where communication = %(name)s and is_completed=0""",
+					{"name": name},
+					as_dict=True,
+				)
 
 			for queue in email_flag_queue:
 				if queue.action != action:
