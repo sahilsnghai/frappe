@@ -40,6 +40,7 @@ def get_emails_sent_today(email_account=None):
 
 	if email_account=None, email account filter is not applied while counting
 	"""
+
 	if frappe.is_oracledb:
 		q = f"""
 			SELECT
@@ -173,35 +174,34 @@ def flush():
 
 
 def get_queue():
-	batch_size = cint(frappe.conf.email_queue_batch_size) or 500
-
-	if frappe.is_oracledb:
-		return frappe.db.sql(
-			f"""select
-				"name", "sender"
-			from
-				{frappe.conf.db_name}."tabEmail Queue"
-			where
-				("status"='Not Sent' or "status"='Partially Sent') and
-				("send_after" is null or "send_after" < to_timestamp({now_datetime()}, 'yyyy-mm-dd hh24:mi:ss.ff6')
-			order
-				by "priority" desc, "retry" asc, "creation" asc
-			limit {batch_size}""",
-			[],
-			as_dict=True,
-		)
-	else:
-		return frappe.db.sql(
-			f"""select
-				name, sender
-			from
-				`tabEmail Queue`
-			where
-				(status='Not Sent' or status='Partially Sent') and
-				(send_after is null or send_after < %(now)s)
-			order
-				by priority desc, retry asc, creation asc
-			limit {batch_size}""",
-			{"now": now_datetime()},
-			as_dict=True,
-		)
+    batch_size = cint(frappe.conf.email_queue_batch_size) or 500
+    if frappe.is_oracledb:
+        return frappe.db.sql(
+            f"""select
+			"name", "sender"
+		from
+			{frappe.conf.db_name}."tabEmail Queue"
+		where
+			("status"='Not Sent' or "status"='Partially Sent') and
+			("send_after" is null or "send_after" < to_timestamp({now_datetime(), 'yyyy-mm-dd hh24:mi:ss.ff6'})
+		order
+			by "priority" desc, "retry" asc, "creation" asc
+		limit {batch_size}""",
+            [],
+            as_dict=True,
+        )
+    else:
+        return frappe.db.sql(
+            f"""select
+			name, sender
+		from
+			`tabEmail Queue`
+		where
+			(status='Not Sent' or status='Partially Sent') and
+			(send_after is null or send_after < %(now)s)
+		order
+			by priority desc, retry asc, creation asc
+		limit {batch_size}""",
+            {"now": now_datetime()},
+            as_dict=True,
+        )
