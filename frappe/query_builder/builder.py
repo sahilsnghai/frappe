@@ -220,8 +220,11 @@ class FrappeOracleQueryBuilder(OracleQueryBuilder):
 			for field, value in self._updates:
 				if not (field.name[0] == '"' and field.name[-1] == '"'):
 					field.name = f'"{field.name}"'
-				if isinstance(value.value, str) and re.search('^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$', value.value):  # noqa: W605
-					value.value = f"to_timestamp('{value.value}', 'yyyy-mm-dd hh24:mi:ss.ff6')"
+				if isinstance(value.value, str):
+					if re.search('^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$', value.value):  # noqa: W605
+						value.value = f"to_timestamp('{value.value}', 'yyyy-mm-dd hh24:mi:ss.ff6')"
+					elif re.search('^\d{4}-\d{2}-\d{2}$', value.value):  # noqa: W605
+						value.value = f"to_date('{value.value}', 'yyyy-mm-dd')"
 		expr = []
 		for field, value in self._updates:
 			left = field.name
@@ -303,12 +306,11 @@ class OracleDB(Base, OracleQuery):
 
 	@classmethod
 	def get_table(cls, table):
-		if not isinstance(table, str) and table.get_table_name() not in FrappeOracleQueryBuilder.IGNORE_TABLES_LIST:
+		if isinstance(table, FrappeTable):
+			return table
 
-			table = FrappeTable(
-				name=table._table_name,
-				schema=frappe.conf.db_name.upper()
-			)
+		if not isinstance(table, str) and table.get_table_name() not in FrappeOracleQueryBuilder.IGNORE_TABLES_LIST:
+			table = FrappeTable(name=table._table_name, schema=frappe.conf.db_name.upper())
 
 		if isinstance(table, str):
 			table = cls.DocType(table)

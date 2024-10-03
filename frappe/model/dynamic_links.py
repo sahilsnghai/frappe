@@ -42,9 +42,16 @@ def get_dynamic_link_map(for_delete=False):
 				dynamic_link_map.setdefault(meta.name, []).append(df)
 			else:
 				try:
-					links = frappe.db.sql_list(
-						"""select distinct `{options}` from `tab{parent}`""".format(**df)
-					)
+					if frappe.is_oracledb:
+						links = frappe.db.sql_list(
+							"""
+							select distinct "{options}" from "tab{parent}"
+							""".format(**df)
+						)
+					else:
+						links = frappe.db.sql_list(
+							"""select distinct `{options}` from `tab{parent}`""".format(**df)
+						)
 					for doctype in links:
 						dynamic_link_map.setdefault(doctype, []).append(df)
 				except frappe.db.TableMissingError:
@@ -58,6 +65,27 @@ def get_dynamic_links():
 	"""Return list of dynamic link fields as DocField.
 	Uses cache if possible"""
 	df = []
+	if frappe.is_oracledb:
+		global dynamic_link_queries
+		dynamic_link_queries = [
+			f"""select tabDocField."parent",
+				tabDocType."read_only", tabDocType."in_create",
+				tabDocField."fieldname", tabDocField."options"
+			from {frappe.conf.db_name}."tabDocField" tabDocField, {frappe.conf.db_name}."tabDocType" tabDocType
+			where tabDocField."fieldtype"='Dynamic Link' and
+			tabDocType."name"=tabDocField."parent" and tabDocType."is_virtual" = 0
+			order by tabDocType."read_only", tabDocType."in_create"
+			""",
+			f"""select tabCustom_Field."dt" parent,
+				tabDocType."read_only", tabDocType."in_create",
+				tabCustom_Field."fieldname", tabCustom_Field."options"
+			from {frappe.conf.db_name}."tabCustom Field" tabCustom_Field,{frappe.conf.db_name}."tabDocType" tabDocType
+			where tabCustom_Field."fieldtype"='Dynamic Link' and
+			tabDocType."name"=tabCustom_Field."dt"
+			order by tabDocType."read_only", tabDocType."in_create"
+			""",
+		]
+
 	for query in dynamic_link_queries:
 		df += frappe.db.sql(query, as_dict=True)
 	return df

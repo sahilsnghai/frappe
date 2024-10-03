@@ -555,6 +555,7 @@ def delete_bulk(doctype, items):
 			# Commit after successful deletion
 			frappe.db.commit()
 		except Exception:
+			raise
 			# rollback if any record failed to delete
 			# if not rollbacked, queries get committed on after_request method in app.py
 			undeleted_items.append(d)

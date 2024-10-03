@@ -59,7 +59,7 @@ class ParameterizedValueWrapper(ValueWrapper):
 				# add quotes if it's a string value
 				value_sql = self.get_value_sql(quote_char=quote_char, **kwargs)
 				sql = param_wrapper.get_sql(param_value=value_sql, **kwargs)
-		elif isinstance(self.value, str) and self.value.startswith('to_timestamp'):
+		elif isinstance(self.value, str) and (self.value.startswith('to_timestamp') or self.value.startswith('to_date')):
 			sql = self.value
 		else:
 			# * BUG: pypika doesen't parse timedeltas and datetime.time
@@ -137,6 +137,8 @@ def conversion_column_value(value: str | int):
 			ret = f"to_timestamp('{value}', 'yyyy-mm-dd hh24:mi:ss.ff6')"
 		elif re.search('^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', value):  # noqa: W605
 			ret = f"to_timestamp('{value}', 'yyyy-mm-dd hh24:mi:ss')"
+		elif re.search('^\d{4}-\d{2}-\d{2}$', value):  # noqa: W605
+			ret = f"to_date('{value}', 'yyyy-mm-dd')"
 		elif value[0] != "'" or value[-1] != "'":
 			ret = "'{}'".format(value.replace("'", "''"))
 		else:

@@ -21,14 +21,25 @@ def get_contact_list(txt, page_length=20, extra_filters: str | None = None) -> l
 		filters.extend(extra_filters)
 
 	fields = ["first_name", "middle_name", "last_name", "company_name"]
-	contacts = frappe.get_list(
-		"Contact",
-		fields=["full_name", "`tabContact Email`.email_id"],
-		filters=filters,
-		or_filters=[[field, "like", f"%{txt}%"] for field in fields]
-		+ [["Contact Email", "email_id", "like", f"%{txt}%"]],
-		limit_page_length=page_length,
-	)
+
+	if frappe.is_oracledb:
+		contacts = frappe.get_list(
+			"Contact",
+			fields=["full_name", "tabContact_Email.\"email_id\""],
+			filters=filters,
+			or_filters=[[field, "like", f"%{txt}%"] for field in fields]
+			+ [["Contact Email", "email_id", "like", f"%{txt}%"]],
+			limit_page_length=page_length,
+		)
+	else:
+		contacts = frappe.get_list(
+			"Contact",
+			fields=["full_name", "`tabContact Email`.email_id"],
+			filters=filters,
+			or_filters=[[field, "like", f"%{txt}%"] for field in fields]
+			+ [["Contact Email", "email_id", "like", f"%{txt}%"]],
+			limit_page_length=page_length,
+		)
 
 	# The multiselect field will store the `label` as the selected value.
 	# The `value` is just used as a unique key to distinguish between the options.
@@ -44,28 +55,50 @@ def get_contact_list(txt, page_length=20, extra_filters: str | None = None) -> l
 
 
 def get_system_managers():
-	return frappe.db.sql_list(
-		"""select parent FROM `tabHas Role`
-		WHERE role='System Manager'
-		AND parent!='Administrator'
-		AND parent IN (SELECT email FROM tabUser WHERE enabled=1)"""
-	)
+	if frappe.is_oracledb:
+		return frappe.db.sql_list(
+			"""select "parent" FROM "tabHas Role"
+			WHERE "role"='System Manager'
+			AND "parent"!='Administrator'
+			AND "parent" IN (SELECT "email" FROM "tabUser" WHERE "enabled"=1)"""
+		)
+	else:
+		return frappe.db.sql_list(
+			"""select parent FROM `tabHas Role`
+			WHERE role='System Manager'
+			AND parent!='Administrator'
+			AND parent IN (SELECT email FROM tabUser WHERE enabled=1)"""
+		)
 
 
 @frappe.whitelist()
 def relink(name, reference_doctype=None, reference_name=None):
-	frappe.db.sql(
-		"""update
-			`tabCommunication`
-		set
-			reference_doctype = %s,
-			reference_name = %s,
-			status = "Linked"
-		where
-			communication_type = "Communication" and
-			name = %s""",
-		(reference_doctype, reference_name, name),
-	)
+	if frappe.is_oracledb:
+		frappe.db.sql(
+			"""update
+				{}."tabCommunication"
+			set
+				"reference_doctype" = '{reference_doctype}',
+				"reference_name" = '{reference_name}',
+				"status" = "Linked"
+			where
+				"communication_type" = "Communication" and
+				name = '{name}'""",
+			(),
+		)
+	else:
+		frappe.db.sql(
+			"""update
+				`tabCommunication`
+			set
+				reference_doctype = %s,
+				reference_name = %s,
+				status = "Linked"
+			where
+				communication_type = "Communication" and
+				name = %s""",
+			(reference_doctype, reference_name, name),
+		)
 
 
 @frappe.whitelist()
