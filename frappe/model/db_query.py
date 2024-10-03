@@ -512,10 +512,13 @@ class DatabaseQuery:
 					table_name = table_name[8:].strip()
 				if not frappe.is_oracledb and table_name[0] != "`":
 					table_name = f"`{table_name}`"
+				elif frappe.is_oracledb and (column_search := re.search('(?P<table>\w+)\."(?P<column>\w+)"', field)):
+					table_name = column_search['table']
+
 				if (
-					table_name not in self.query_tables
-					and (frappe.is_oracledb and table_name not in (_t.replace(' ', '_') for _t in self.query_tables))
-					and table_name not in self.linked_table_aliases.values()
+				table_name not in self.query_tables
+				and (frappe.is_oracledb and table_name not in (_t.replace(' ', '_') for _t in self.query_tables))
+				and table_name not in self.linked_table_aliases.values()
 				):
 					self.append_table(table_name)
 
@@ -697,7 +700,11 @@ class DatabaseQuery:
 
 			# handle child / joined table fields
 			elif "." in field:
-				table, column = column.split(".", 1)
+				if frappe.is_oracledb:
+					if column_search := re.search('(?P<table>\w+)\."(?P<column>\w+)"', field):
+						table, column = column_search["table"], column_search["column"]
+				else:
+					table, column = column.split(".", 1)
 				ch_doctype = table
 
 				if ch_doctype in self.linked_table_aliases:
@@ -717,6 +724,7 @@ class DatabaseQuery:
 					else:
 						self.remove_field(i)
 				else:
+					print(f"--->>> [{ch_doctype}] -- [{table}]")
 					raise frappe.PermissionError(ch_doctype)
 
 			elif column in permitted_fields:

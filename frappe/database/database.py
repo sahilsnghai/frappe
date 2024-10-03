@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+
 import copy
 import inspect
 import datetime
@@ -15,6 +16,8 @@ from collections.abc import Iterable, Sequence
 from contextlib import contextmanager, suppress
 from time import time
 from typing import TYPE_CHECKING, Any, Union
+
+import sqlparse
 
 from pypika.dialects import MySQLQueryBuilder, PostgreSQLQueryBuilder, OracleQueryBuilder
 from pypika.terms import Criterion, NullValue
@@ -53,6 +56,36 @@ SINGLE_WORD_PATTERN = re.compile(r'([`"]?)(tab([A-Z]\w+))\1')
 MULTI_WORD_PATTERN = re.compile(r'([`"])(tab([A-Z]\w+)( [A-Z]\w+)+)\1')
 
 SQL_ITERATOR_BATCH_SIZE = 100
+import sys
+
+def frame_printer():
+	# Capture the current stack frame using `sys._getframe()`
+	current_frame = sys._getframe().f_back
+
+	frames_details = []
+
+	# Traverse and print details of each frame
+	while current_frame:
+		if current_frame.f_code.co_filename.endswith('bench_helper.py'):
+			break
+		frames_details.append([
+			current_frame.f_code.co_name,
+			current_frame.f_code.co_filename,
+			current_frame.f_lineno,
+			current_frame.f_locals
+		])
+		# Move to the previous frame in the stack
+		current_frame = current_frame.f_back
+
+	for co_name, co_filename, lineno, f_locals in frames_details[::-1]:
+		print(f"Function Name: {co_name}")
+		print(f"File Name: {co_filename}")
+		print(f"Line Number: {lineno}")
+		print(f"Local Variables: ")
+		for k, v in f_locals.items():
+			print(f"\t{k}: ", v)
+		print("=" * 50)
+
 
 
 class Database:
@@ -238,12 +271,16 @@ class Database:
 				print(f"[query: {query} | values: {values}]")
 				self._cursor.execute(query, values)
 			else:
-				print(f"[query: {query}]")
-				# if "Role_Profile" in query:
-				# 	raise
+				print(f"[query: \n{sqlparse.format(query, reindent=True)}\n]")
+				# if re.match("^(update|insert) ", query, re.IGNORECASE):
+				# 	frame_printer()
+				if 'where `tabDocField`.fieldtype=\'Dynamic Link\'' in query:
+					raise
+				if 'mayank' in query:
+					print(query)
 				self._cursor.execute(query)
 		except Exception as e:
-			raise Exception(f'{e}: query: {query} | {type(query_bk)}')
+			raise Exception(f'{e}: query: \n{sqlparse.format(query, reindent=True)}\n | {type(query_bk)}')
 			inspect.print_exc(file=sys.stdout)
 
 			if self.is_duplicate_entry(e):
@@ -635,22 +672,7 @@ class Database:
 				try:
 					if order_by:
 						order_by = "modified" if order_by == DefaultOrderBy else order_by
-					out = self._get_values_from_table(
-						fields=fields,
-						filters=filters,
-						doctype=doctype,
-						as_dict=as_dict,
-						debug=debug,
-						order_by=order_by,
-						update=update,
-						run=run,
-						pluck=pluck,
-						distinct=distinct,
-						limit=limit,
-						for_update=False if frappe.is_oracledb else for_update,
-						skip_locked=skip_locked,
-						wait=wait,
-					)
+					out = self._get_values_from_table(fields=fields, filters=filters, doctype=doctype, as_dict=as_dict, debug=debug, order_by=order_by, update=update, run=run, pluck=pluck, distinct=distinct, limit=limit, for_update=False if frappe.is_oracledb else for_update, skip_locked=skip_locked, wait=wait, )
 				except Exception as e:
 					if ignore and (
 						frappe.db.is_missing_column(e)

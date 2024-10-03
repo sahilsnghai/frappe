@@ -175,8 +175,8 @@ def search_widget(
 		if not meta.translated_doctype:
 			_txt = frappe.db.escape((txt or "").replace("%", "").replace("@", ""))
 			# locate returns 0 if string is not found, convert 0 to null and then sort null to end in order by
-			_relevance = f'(1 / nullif(locate({_txt}, tab{doctype.replace(" ", "_")}."name"), 0))'
-			formatted_fields.append(f'"{_relevance}" _relevance')
+			_relevance = f'(1 / nullif(INSTR(tab{doctype.replace(" ", "_")}."name", {_txt}), 0))'
+			formatted_fields.append(f'{_relevance} "_relevance"')
 	else:
 		formatted_fields = [f"`tab{meta.name}`.`{f.strip()}`" for f in fields]
 

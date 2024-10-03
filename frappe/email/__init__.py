@@ -21,14 +21,25 @@ def get_contact_list(txt, page_length=20, extra_filters: str | None = None) -> l
 		filters.extend(extra_filters)
 
 	fields = ["first_name", "middle_name", "last_name", "company_name"]
-	contacts = frappe.get_list(
-		"Contact",
-		fields=["full_name", "`tabContact Email`.email_id"],
-		filters=filters,
-		or_filters=[[field, "like", f"%{txt}%"] for field in fields]
-		+ [["Contact Email", "email_id", "like", f"%{txt}%"]],
-		limit_page_length=page_length,
-	)
+
+	if frappe.is_oracledb:
+		contacts = frappe.get_list(
+			"Contact",
+			fields=["full_name", "tabContact_Email.\"email_id\""],
+			filters=filters,
+			or_filters=[[field, "like", f"%{txt}%"] for field in fields]
+			+ [["Contact Email", "email_id", "like", f"%{txt}%"]],
+			limit_page_length=page_length,
+		)
+	else:
+		contacts = frappe.get_list(
+			"Contact",
+			fields=["full_name", "`tabContact Email`.email_id"],
+			filters=filters,
+			or_filters=[[field, "like", f"%{txt}%"] for field in fields]
+			+ [["Contact Email", "email_id", "like", f"%{txt}%"]],
+			limit_page_length=page_length,
+		)
 
 	# The multiselect field will store the `label` as the selected value.
 	# The `value` is just used as a unique key to distinguish between the options.

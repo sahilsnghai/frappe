@@ -40,27 +40,29 @@ def get_emails_sent_today(email_account=None):
 
 	if email_account=None, email account filter is not applied while counting
 	"""
-	q = """
-		SELECT
-			COUNT(`name`)
-		FROM
-			`tabEmail Queue`
-		WHERE
-			`status` in ('Sent', 'Not Sent', 'Sending')
-			AND
-			`creation` > (SYSDATE - INTERVAL '24' HOUR)
-	"""
+
 	if frappe.is_oracledb:
 		q = f"""
-		SELECT
-			COUNT("name")
-		FROM
-			{frappe.conf.db_name}."tabEmail Queue"
-		WHERE
-			"status" in ('Sent', 'Not Sent', 'Sending')
-			AND
-			"creation" > to_timestamp(CURRENT_TIMESTAMP() - INTERVAL '24' HOUR)
-	"""
+			SELECT
+				COUNT("name")
+			FROM
+				{frappe.conf.db_name}."tabEmail Queue"
+			WHERE
+				"status" in ('Sent', 'Not Sent', 'Sending')
+				AND
+				"creation" > (SYSDATE - INTERVAL '24' HOUR)
+		"""
+	else:
+		q = """
+			SELECT
+				COUNT(`name`)
+			FROM
+				`tabEmail Queue`
+			WHERE
+				`status` in ('Sent', 'Not Sent', 'Sending')
+				AND
+				`creation` > (NOW() - INTERVAL '24' HOUR)
+		"""
 
 	q_args = {}
 	if email_account is not None:
@@ -173,7 +175,6 @@ def flush():
 
 def get_queue():
     batch_size = cint(frappe.conf.email_queue_batch_size) or 500
-
     if frappe.is_oracledb:
         return frappe.db.sql(
             f"""select

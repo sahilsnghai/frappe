@@ -982,7 +982,12 @@ class DocType(Document):
 
 	def get_max_idx(self):
 		"""Returns the highest `idx`"""
-		max_idx = frappe.db.sql("""select max(idx) from `tabDocField` where parent = %s""", self.name)
+		if frappe.is_oracledb:
+			max_idx = frappe.db.sql(f"""
+					select max("idx") from {frappe.conf.db_name}."tabDocField" tabDocField where parent = '{self.name}'
+					""", [])
+		else:
+			max_idx = frappe.db.sql("""select max(idx) from `tabDocField` where parent = %s""", self.name)
 		return max_idx and max_idx[0][0] or 0
 
 	def validate_name(self, name=None):

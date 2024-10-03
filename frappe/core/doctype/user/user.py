@@ -399,7 +399,7 @@ class User(Document):
 		return link
 
 	def get_other_system_managers(self):
-		user_doctype = DocType("User").as_("user")
+		user_doctype = DocType("User").as_("tabUser")
 		user_role_doctype = DocType("Has Role").as_("user_role")
 		return (
 			frappe.qb.from_(user_doctype)
@@ -1077,37 +1077,75 @@ def user_query(doctype, txt, searchfield, start, page_len, filters):
 	doctype = "User"
 	conditions = []
 
-	user_type_condition = "and user_type != 'Website User'"
-	if filters and filters.get("ignore_user_type") and frappe.session.data.user_type == "System User":
-		user_type_condition = ""
-	filters and filters.pop("ignore_user_type", None)
 
 	txt = f"%{txt}%"
-	return frappe.db.sql(
-		"""SELECT `name`, CONCAT_WS(' ', first_name, middle_name, last_name)
-		FROM `tabUser`
-		WHERE `enabled`=1
-			{user_type_condition}
-			AND `docstatus` < 2
-			AND `name` NOT IN ({standard_users})
-			AND ({key} LIKE %(txt)s
-				OR CONCAT_WS(' ', first_name, middle_name, last_name) LIKE %(txt)s)
-			{fcond} {mcond}
-		ORDER BY
-			CASE WHEN `name` LIKE %(txt)s THEN 0 ELSE 1 END,
-			CASE WHEN concat_ws(' ', first_name, middle_name, last_name) LIKE %(txt)s
-				THEN 0 ELSE 1 END,
-			NAME asc
-		LIMIT %(page_len)s OFFSET %(start)s
-	""".format(
-			user_type_condition=user_type_condition,
-			standard_users=", ".join(frappe.db.escape(u) for u in STANDARD_USERS),
-			key=searchfield,
-			fcond=get_filters_cond(doctype, filters, conditions),
-			mcond=get_match_cond(doctype),
-		),
-		dict(start=start, page_len=page_len, txt=txt),
-	)
+	if frappe.is_oracledb:
+		user_type_condition = "and \"user_type\" != 'Website User'"
+		if (filters and filters.get("ignore_user_type")
+			and frappe.session.data.user_type == "System User"):
+			user_type_condition = ""
+		filters and filters.pop("ignore_user_type", None)
+		return frappe.db.sql(
+			"""SELECT "name", NVL("first_name", '') || ' ' || NVL("middle_name", '') || ' ' || NVL("last_name", '')
+			FROM {schema}."tabUser" tabUser
+			WHERE "enabled"=1
+				{user_type_condition}
+				AND "docstatus" < 2
+				AND "name" NOT IN ({standard_users})
+				AND ("{key}" LIKE '{txt}'
+					OR (NVL("first_name", '') || ' ' || NVL("middle_name", '') || ' ' || NVL("last_name", '')) LIKE '{txt}')
+				{fcond} {mcond}
+			ORDER BY
+				CASE WHEN "name" LIKE '{txt}' THEN 0 ELSE 1 END,
+				CASE WHEN (NVL("first_name", '') || ' ' || NVL("middle_name", '') || ' ' || NVL("last_name", '')) LIKE '{txt}'
+					THEN 0 ELSE 1 END,
+				"name" asc
+			OFFSET {start} ROWS
+			FETCH NEXT {page_len} ROWS ONLY
+		""".format(
+				schema=frappe.conf.db_name,
+				txt=txt,
+				user_type_condition=user_type_condition,
+				standard_users=", ".join(frappe.db.escape(u) for u in STANDARD_USERS),
+				key=searchfield,
+				fcond=get_filters_cond(doctype, filters, conditions),
+				mcond=get_match_cond(doctype),
+				start=start,
+				page_len=page_len
+			),
+			[]
+		)
+	else:
+		user_type_condition = "and user_type != 'Website User'"
+		if filters and filters.get(
+			"ignore_user_type") and frappe.session.data.user_type == "System User":
+			user_type_condition = ""
+		filters and filters.pop("ignore_user_type", None)
+		return frappe.db.sql(
+			"""SELECT `name`, CONCAT_WS(' ', first_name, middle_name, last_name)
+			FROM `tabUser`
+			WHERE `enabled`=1
+				{user_type_condition}
+				AND `docstatus` < 2
+				AND `name` NOT IN ({standard_users})
+				AND ({key} LIKE %(txt)s
+					OR CONCAT_WS(' ', first_name, middle_name, last_name) LIKE %(txt)s)
+				{fcond} {mcond}
+			ORDER BY
+				CASE WHEN `name` LIKE %(txt)s THEN 0 ELSE 1 END,
+				CASE WHEN concat_ws(' ', first_name, middle_name, last_name) LIKE %(txt)s
+					THEN 0 ELSE 1 END,
+				NAME asc
+			LIMIT %(page_len)s OFFSET %(start)s
+		""".format(
+				user_type_condition=user_type_condition,
+				standard_users=", ".join(frappe.db.escape(u) for u in STANDARD_USERS),
+				key=searchfield,
+				fcond=get_filters_cond(doctype, filters, conditions),
+				mcond=get_match_cond(doctype),
+			),
+			dict(start=start, page_len=page_len, txt=txt),
+		)
 
 
 def get_total_users():

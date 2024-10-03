@@ -1,5 +1,6 @@
 from datetime import time
 from enum import Enum
+from typing import Any
 
 from pypika.functions import *
 from pypika.terms import Arithmetic, ArithmeticExpression, CustomFunction, Function
@@ -14,6 +15,16 @@ from .utils import PseudoColumn
 class Concat_ws(Function):
 	def __init__(self, *terms, **kwargs):
 		super().__init__("CONCAT_WS", *terms, **kwargs)
+
+	def get_function_sql(self, **kwargs: Any) -> str:
+		if frappe.is_oracledb:
+			return " || ' ' || ".join(
+				p.get_sql(with_alias=False, subquery=True, **kwargs)
+				if hasattr(p, "get_sql")
+				else self.get_arg_sql(p, **kwargs)
+				for p in self.args
+			)
+		return super().get_function_sql(**kwargs)
 
 
 class Locate(Function):
@@ -96,6 +107,7 @@ UnixTimestamp = ImportMapper(
 	{
 		db_type_is.MARIADB: CustomFunction("unix_timestamp", ["date"]),
 		db_type_is.POSTGRES: _PostgresUnixTimestamp,
+		db_type_is.ORACLEDB: _PostgresUnixTimestamp,
 	}
 )
 
