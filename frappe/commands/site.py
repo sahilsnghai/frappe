@@ -76,6 +76,7 @@ def new_site(
 		site,
 		db_root_username=db_root_username,
 		db_root_password=db_root_password,
+		db_root_service_name=db_root_service_name,
 		admin_password=admin_password,
 		verbose=verbose,
 		install_apps=install_app,

@@ -182,7 +182,6 @@ class FrappeOracleQueryBuilder(OracleQueryBuilder):
 	IGNORE_TABLES_LIST = ('all_tables', 'user_tab_columns', 'user_tables')
 
 	def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
-		print(f"self._form: {self._from}")
 		_table = []
 
 		for clause in self._from:
