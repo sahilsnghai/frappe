@@ -524,9 +524,19 @@ class DatabaseQuery:
 
 	def append_table(self, table_name):
 		self.tables.append(table_name)
-		if '`' in table_name:
-			table_name = table_name.replace('`', '')
-		doctype = table_name[4:-1]
+		if frappe.is_oracledb:
+			if (table_name[0] == '`' and table_name[-1] == '`') or (
+				table_name[0] == '"' and table_name[-1] == '"'
+			):
+				doctype = table_name[4:-1]
+			else:
+				doctype = table_name[3:]
+
+		else:
+			if '`' in table_name:
+				table_name = table_name.replace('`', '')
+			doctype = table_name[4:-1]
+
 		self.check_read_permission(doctype)
 
 	def append_link_table(self, doctype, fieldname):
@@ -547,6 +557,7 @@ class DatabaseQuery:
 		return linked_table
 
 	def check_read_permission(self, doctype: str, parent_doctype: str | None = None):
+		print(f"==>> Read permission: {doctype} <<==")
 		if self.flags.ignore_permissions:
 			return
 

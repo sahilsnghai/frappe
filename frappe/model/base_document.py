@@ -562,8 +562,8 @@ class BaseDocument:
 						VALUES ({values})""".format(
 						schema=frappe.conf.db_name.upper(),
 						doctype=self.doctype,
-						columns=", ".join('"' + c + '"' for c in columns),
-						values=", ".join(_values)
+						columns=",".join('"' + c + '"' for c in columns),
+						values=",".join(_values)
 					), []
 					# list(d.values()),
 				)

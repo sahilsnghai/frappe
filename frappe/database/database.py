@@ -15,6 +15,7 @@ import traceback
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager, suppress
 from time import time
+from timeit import reindent
 from typing import TYPE_CHECKING, Any, Union
 
 import sqlparse
@@ -269,6 +270,10 @@ class Database:
 			if values:
 				self._cursor.execute(query, values)
 			else:
+				# if 'as Rol' in query:
+				# 	raise NotImplementedError()
+					# frame_printer()
+				print(f"[Query]: {sqlparse.format(query, indent=4)}")
 				self._cursor.execute(query)
 		except Exception as e:
 			raise Exception(f'{e}: query: \n{sqlparse.format(query, reindent=True)}\n')
