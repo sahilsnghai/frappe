@@ -2,7 +2,7 @@ from datetime import datetime
 
 import frappe
 from frappe.query_builder import Interval, Order
-from frappe.query_builder.functions import Date, Sum, UnixTimestamp
+from frappe.query_builder.functions import Date, Sum, UnixTimestamp, DateFunction
 from frappe.utils import getdate
 
 
@@ -17,13 +17,13 @@ def get_energy_points_heatmap_data(user, date):
 
 	return dict(
 		frappe.qb.from_(eps_log)
-		.select(UnixTimestamp(Date(eps_log.creation)), Sum(eps_log.points))
+		.select(UnixTimestamp(DateFunction(eps_log.creation)), Sum(eps_log.points))
 		.where(eps_log.user == user)
 		.where(eps_log["type"] != "Review")
-		.where(Date(eps_log.creation) > Date(date) - Interval(years=1))
-		.where(Date(eps_log.creation) < Date(date) + Interval(years=1))
-		.groupby(Date(eps_log.creation))
-		.orderby(Date(eps_log.creation), order=Order.asc)
+		.where(DateFunction(eps_log.creation) > DateFunction(date) - Interval(years=1))
+		.where(DateFunction(eps_log.creation) < DateFunction(date) + Interval(years=1))
+		.groupby(DateFunction(eps_log.creation))
+		.orderby(DateFunction(eps_log.creation), order=Order.asc)
 		.run()
 	)
 

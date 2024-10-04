@@ -254,8 +254,6 @@ class FrappeOracleQueryBuilder(OracleQueryBuilder):
 		return " ({columns})".format(
 			columns=",".join(f'"{term.name}"' for term in self._columns)
 		)
-		# term.get_sql(with_namespace=False, **kwargs)
-		# )
 
 	def _values_sql(self, **kwargs: Any) -> str:
 
@@ -266,6 +264,7 @@ class FrappeOracleQueryBuilder(OracleQueryBuilder):
 		return f" VALUES ({values})"
 
 	def _insert_sql(self, **kwargs: Any) -> str:
+		self._insert_table_alias = self._insert_table.alias
 		self._insert_table.alias = None
 		table = self._insert_table.get_sql(**kwargs)
 
@@ -279,22 +278,51 @@ class FrappeOracleQueryBuilder(OracleQueryBuilder):
 		if not self._insert_table:
 			raise QueryException("On conflict only applies to insert query")
 		self._on_conflict = True
-
+		self._on_conflict_fields.extend(target_fields)
 		return self
 
 	def do_update(self,
 				  update_field: Union[str, Field], update_value: Optional[Any]) -> "FrappeOracleQueryBuilder":
 		if self._on_conflict_do_nothing:
 			raise QueryException("Can not have two conflict handlers")
-
+		self._on_conflict_do_updates.append((update_field, update_value))
 		return self
 
 	def get_sql(self, *args: Any, **kwargs: Any) -> str:
 		query_string = super().get_sql(*args, **kwargs)
-		if not self._on_conflict:
+		if not (self._on_conflict and self._on_conflict_fields and self._on_conflict_do_updates):
 			return query_string
-
-
+		query_string = """
+		MERGE INTO {table} {table_alias}
+		USING (SELECT {mapping_columns} FROM dual) new_data
+		ON ({on_statement})
+		WHEN MATCHED THEN
+		UPDATE SET {update_statement}
+		WHEN NOT MATCHED THEN
+		INSERT ({columns})
+		VALUES ({value_statement})
+		"""
+		ret = query_string.format(
+			table=self._insert_table.get_sql(),
+			table_alias=self._insert_table_alias,
+			mapping_columns=", ".join(
+				f'{v} {c}'
+				for v, c in
+				zip(self._values[0], self._columns, strict=False)),
+			on_statement=" and ".join(
+				f'{self._insert_table_alias}."{i.get_sql()}" = new_data."{i.get_sql()}"' for i in self._on_conflict_fields
+			),
+			update_statement=", ".join(
+				f'{self._insert_table_alias}."{k.get_sql()}" = {conversion_column_value(v)}' for k, v in self._on_conflict_do_updates
+			),
+			columns=", ".join(
+				f'{self._insert_table_alias}."{col.get_sql()}"' for col in self._columns
+			),
+			value_statement=", ".join(
+				f'new_data."{col.get_sql()}"' for col in self._columns
+			)
+		)
+		return ret
 
 	def __repr__(self):
 		return f"{self}"

@@ -52,6 +52,9 @@ def get_permission_query_conditions(user):
 	if user == "Administrator":
 		return ""
 
+	if frappe.is_oracledb:
+		return f"""(tabKanban_Board."private"=0 or tabKanban_Board."owner"={frappe.db.escape(user)})"""
+
 	return f"""(`tabKanban Board`.private=0 or `tabKanban Board`.owner={frappe.db.escape(user)})"""
 
 

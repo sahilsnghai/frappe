@@ -1,3 +1,4 @@
+import re
 from datetime import time
 from enum import Enum
 from typing import Any
@@ -79,6 +80,15 @@ class _PostgresTimestamp(ArithmeticExpression):
 
 		super().__init__(operator=Arithmetic.add, left=datepart, right=timepart, alias=alias)
 
+class OracleDBDate(Date):
+	def __init__(self, term, alias=None):
+		super().__init__(term=term, alias=alias)
+
+	def get_sql(self, **kwargs: Any) -> str:
+		_date = self.args[0].get_sql()
+		if re.search(r"\d{4}-\d{2}-\d{2}", _date):
+			return f"TO_DATE('{_date}', 'YYYY-MM-DD')"
+		return f"TO_DATE({_date}, 'YYYY-MM-DD')"
 
 CombineDatetime = ImportMapper(
 	{
@@ -94,6 +104,14 @@ DateFormat = ImportMapper(
 	}
 )
 
+DateFunction = ImportMapper(
+	{
+		db_type_is.MARIADB: Date,
+		db_type_is.POSTGRES: Date,
+		db_type_is.ORACLEDB: OracleDBDate
+	}
+)
+
 
 class _PostgresUnixTimestamp(Extract):
 	# Note: this is just a special case of "Extract" function with "epoch" hardcoded.
@@ -103,11 +121,20 @@ class _PostgresUnixTimestamp(Extract):
 		self.field = field
 
 
+class _OracleDBUnixTimestamp(Function):
+	def __init__(self, field, alias=None):
+		super().__init__(field, alias=alias)
+		self.field = field
+
+	def get_sql(self, **kwargs: Any) -> str:
+		return f"(CAST({self.field.get_sql()} AS DATE) - TO_DATE('1970-01-01', 'YYYY-MM-DD'))"
+
+
 UnixTimestamp = ImportMapper(
 	{
 		db_type_is.MARIADB: CustomFunction("unix_timestamp", ["date"]),
 		db_type_is.POSTGRES: _PostgresUnixTimestamp,
-		db_type_is.ORACLEDB: _PostgresUnixTimestamp,
+		db_type_is.ORACLEDB: _OracleDBUnixTimestamp,
 	}
 )
 

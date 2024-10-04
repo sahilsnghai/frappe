@@ -3,6 +3,7 @@
 
 import datetime
 import json
+from dataclasses import field
 
 import frappe
 from frappe import _
@@ -197,17 +198,17 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 	to_date = to_date
 
 	if frappe.is_oracledb:
-		datefield = f'tab{doctype.replace(" ", "_")}."{datefield}"'
-		value_field = f'tab{doctype.replace(" ", "_")}."{value_field}"'
-		from_date = f"to_timestamp({from_date}, 'yyyy-mm-dd')"
-		to_date = f"to_timestamp({str(to_date)}, 'yyyy-mm-dd hh24:mi:ss.ff6')"
+		# datefield = f'tab{doctype.replace(" ", "_")}."{datefield}"'
+		value_field = f'"{value_field}"'
+		# from_date = f"to_timestamp('{from_date}', 'yyyy-mm-dd')"
+		# to_date = f"to_timestamp('{str(to_date)}', 'yyyy-mm-dd hh24:mi:ss.ff6')"
 
 	filters.append([doctype, datefield, ">=", from_date, False])
 	filters.append([doctype, datefield, "<=", to_date, False])
 
 	data = frappe.get_list(
 		doctype,
-		fields=[datefield, f"SUM({value_field})", "COUNT(*)"],
+		fields=[datefield, f'SUM({value_field})', "COUNT(*)"],
 		filters=filters,
 		group_by=datefield,
 		order_by=datefield,
