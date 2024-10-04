@@ -118,25 +118,41 @@ class Address(Document):
 
 
 def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
-	if preferred_key in ["is_shipping_address", "is_primary_address"]:
-		address = frappe.db.sql(
-			""" SELECT
-				addr.name
-			FROM
-				`tabAddress` addr, `tabDynamic Link` dl
-			WHERE
-				dl.parent = addr.name and dl.link_doctype = {} and
-				dl.link_name = {} and ifnull(addr.disabled, 0) = 0 and
-				{} = {}
-			""".format("%s", "%s", preferred_key, "%s"),
-			(doctype, name, 1),
-			as_dict=1,
-		)
+    if preferred_key in ["is_shipping_address", "is_primary_address"]:
+        if frappe.is_oracledb:
+            address = frappe.db.sql(
+                f""" SELECT
+					addr."name"
+				FROM
+					{frappe.conf.db.name}."tabAddress" addr, {frappe.conf.db_name}."tabDynamic Link" dl
+				WHERE
+					dl."parent" = addr."name" and dl."link_doctype" = '{doctype}' and
+					dl."link_name" = '{name}' and ifnull(addr."disabled", 0) = 0 and
+					'{preferred_key}' = 1
+				""",
+                [],
+                as_dict=1,
+            )
+        else:
+            address = frappe.db.sql(
+            	""" SELECT
+						addr.name
+					FROM
+						`tabAddress` addr, `tabDynamic Link` dl
+					WHERE
+						dl.parent = addr.name and dl.link_doctype = {} and
+						dl.link_name = {} and ifnull(addr.disabled, 0) = 0 and
+						{} = {}
+					""".format(
+						"%s", "%s", preferred_key, "%s"
+					),
+					(doctype, name, 1),
+					as_dict=1,
+				)
 
-		if address:
-			return address[0].name
-
-	return
+        if address:
+            return address[0].name
+    return
 
 
 @frappe.whitelist()
@@ -274,7 +290,10 @@ def address_query(doctype, txt, searchfield, start, page_len, filters):
 	meta = frappe.get_meta(doctype)
 	for fieldname, value in filters.items():
 		if meta.get_field(fieldname) or fieldname in frappe.db.DEFAULT_COLUMNS:
-			condition += f" and {fieldname}={frappe.db.escape(value)}"
+			if frappe.is_oracledb:
+				condition += f' and "{fieldname}"=\'{frappe.db.escape(value)}\''
+			else:
+				condition += f" and {fieldname}={frappe.db.escape(value)}"
 
 	searchfields = meta.get_search_fields()
 
@@ -282,23 +301,71 @@ def address_query(doctype, txt, searchfield, start, page_len, filters):
 		searchfields.append(searchfield)
 
 	search_condition = ""
-	for field in searchfields:
-		if search_condition == "":
-			search_condition += f"`tabAddress`.`{field}` like %(txt)s"
+
+	if frappe.is_oracledb:
+		for field in searchfields:
+			if search_condition == "":
+				search_condition += f'tabAddress."{field}" like {"%" + txt + "%"}'
+			else:
+				search_condition += f' or tabAddress."{field}" like {"%" + txt + "%"}'
+
+		# Use custom title field if set
+		if meta.show_title_field_in_link and meta.title_field:
+			title = f'tabAddress."{meta.title_field}"'
 		else:
-			search_condition += f" or `tabAddress`.`{field}` like %(txt)s"
+			title = 'tabAddress."city"'
 
-	# Use custom title field if set
-	if meta.show_title_field_in_link and meta.title_field:
-		title = f"`tabAddress`.{meta.title_field}"
-	else:
-		title = "`tabAddress`.city"
+		# Get additional search fields
+		if searchfields:
+			extra_query_fields = ",".join([f'tabAddress."{field}"' for field in searchfields])
+		else:
+			extra_query_fields = 'tabAddress."country"'
 
-	# Get additional search fields
-	if searchfields:
-		extra_query_fields = ",".join([f"`tabAddress`.{field}" for field in searchfields])
 	else:
-		extra_query_fields = "`tabAddress`.country"
+		for field in searchfields:
+			if search_condition == "":
+				search_condition += f"`tabAddress`.`{field}` like %(txt)s"
+			else:
+				search_condition += f" or `tabAddress`.`{field}` like %(txt)s"
+		# Use custom title field if set
+		if meta.show_title_field_in_link and meta.title_field:
+			title = f"`tabAddress`.{meta.title_field}"
+		else:
+			title = "`tabAddress`.city"
+
+		# Get additional search fields
+		if searchfields:
+			extra_query_fields = ",".join([f"`tabAddress`.{field}" for field in searchfields])
+		else:
+			extra_query_fields = "`tabAddress`.country"
+
+
+	if frappe.is_oracledb:
+		return frappe.db.sql(
+            f"""
+			SELECT
+				tabAddress."name", "{title}", "{extra_query_fields}"
+			FROM
+				{frappe.conf.db_name}."tabAddress" tabAddress
+			JOIN {frappe.conf.db_name}."tabDynamic Link" tabDynamic_Link
+				ON (tabDynamic_Link."parent" = tabAddress."name" AND tabDynamic_Link."parenttype" = 'Address')
+			WHERE
+				tabDynamic_Link."link_doctype" = '{link_doctype}' AND
+				tabDynamic_Link."link_name" = '{link_name}' AND
+				NVL(tabAddress."disabled", 0) = 0 AND
+				({search_condition})
+				{get_match_cond(doctype)} {condition or ""}
+			ORDER BY
+				CASE
+					WHEN INSTR(tabAddress."name", {txt.replace("%", "")}) != 0
+					THEN INSTR(tabAddress."name", {txt.replace("%", "")})
+					ELSE 99999
+				END,
+				tabAddress."idx" DESC, tabAddress."name"
+			OFFSET {start} ROWS FETCH NEXT {page_len} ROWS ONLY
+			""",
+            [],
+        )
 
 	return frappe.db.sql(
 		"""select
