@@ -147,7 +147,7 @@ def update_password(user, pwd, doctype="User", fieldname="password", logout_all_
 		query = query.on_duplicate_key_update(Auth.password, hashPwd).on_duplicate_key_update(
 			Auth.encrypted, 0
 		)
-	elif frappe.db.db_type == "postgres":
+	elif frappe.db.db_type in ("postgres", "oracledb"):
 		query = (
 			query.on_conflict(Auth.doctype, Auth.name, Auth.fieldname)
 			.do_update(Auth.password, hashPwd)

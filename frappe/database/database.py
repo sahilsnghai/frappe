@@ -270,13 +270,13 @@ class Database:
 			if values:
 				self._cursor.execute(query, values)
 			else:
-				# if 'as Rol' in query:
+				# if '%%all%%' in query:
 				# 	raise NotImplementedError()
 					# frame_printer()
 				print(f"[Query]: {sqlparse.format(query, indent=4)}")
 				self._cursor.execute(query)
 		except Exception as e:
-			raise Exception(f'{e}: query: \n{sqlparse.format(query, reindent=True)}\n')
+			raise Exception(f'{e}: query: \n{query}\n')
 			inspect.print_exc(file=sys.stdout)
 
 			if self.is_duplicate_entry(e):

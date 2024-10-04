@@ -7,7 +7,7 @@ from pypika import MySQLQuery, OracleQuery, Order, PostgreSQLQuery, terms, Empty
 from pypika.dialects import MySQLQueryBuilder, OracleQueryBuilder, PostgreSQLQueryBuilder
 from pypika.queries import Query, QueryBuilder, Schema, Table, Field
 from pypika.terms import BasicCriterion, ComplexCriterion, ContainsCriterion, Function, Term
-from pypika.utils import format_alias_sql, format_quotes
+from pypika.utils import format_alias_sql, format_quotes, QueryException
 
 import frappe
 from frappe.query_builder.terms import ParameterizedValueWrapper, conversion_column_value
@@ -181,6 +181,16 @@ class Postgres(Base, PostgreSQLQuery):
 class FrappeOracleQueryBuilder(OracleQueryBuilder):
 	IGNORE_TABLES_LIST = ('all_tables', 'user_tab_columns', 'user_tables')
 
+	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
+
+		self._on_conflict = False
+		self._on_conflict_fields = []
+		self._on_conflict_do_nothing = False
+		self._on_conflict_do_updates = []
+		self._on_conflict_wheres = None
+		self._on_conflict_do_update_wheres = None
+
 	def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
 		_table = []
 
@@ -256,12 +266,35 @@ class FrappeOracleQueryBuilder(OracleQueryBuilder):
 		return f" VALUES ({values})"
 
 	def _insert_sql(self, **kwargs: Any) -> str:
+		self._insert_table.alias = None
 		table = self._insert_table.get_sql(**kwargs)
 
 		return "INSERT {ignore}INTO {table}".format(
 			table=table,
 			ignore="IGNORE " if self._ignore else "",
 		)
+
+	def on_conflict(self, *target_fields: Union[str, Term]) -> "FrappeOracleQueryBuilder":
+
+		if not self._insert_table:
+			raise QueryException("On conflict only applies to insert query")
+		self._on_conflict = True
+
+		return self
+
+	def do_update(self,
+				  update_field: Union[str, Field], update_value: Optional[Any]) -> "FrappeOracleQueryBuilder":
+		if self._on_conflict_do_nothing:
+			raise QueryException("Can not have two conflict handlers")
+
+		return self
+
+	def get_sql(self, *args: Any, **kwargs: Any) -> str:
+		query_string = super().get_sql(*args, **kwargs)
+		if not self._on_conflict:
+			return query_string
+
+
 
 	def __repr__(self):
 		return f"{self}"

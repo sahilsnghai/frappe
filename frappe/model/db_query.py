@@ -31,6 +31,7 @@ from frappe.utils import (
 )
 from frappe.utils.data import DateTimeLikeObject, get_datetime, getdate, sbool
 
+EQUALS_TO_NULL = re.compile(r" =\s*NULL$", flags=re.IGNORECASE)
 LOCATE_PATTERN = re.compile(r"locate\([^,]+,\s*[`\"]?name[`\"]?\s*\)", flags=re.IGNORECASE)
 LOCATE_CAST_PATTERN = re.compile(r"locate\(([^,]+),\s*([`\"]?name[`\"]?)\s*\)", flags=re.IGNORECASE)
 FUNC_IFNULL_PATTERN = re.compile(r"(strpos|ifnull|coalesce)\(\s*[`\"]?name[`\"]?\s*,", flags=re.IGNORECASE)
@@ -948,7 +949,7 @@ class DatabaseQuery:
 
 				if f.operator.lower() in ("like", "not like") and isinstance(value, str):
 					# because "like" uses backslash (\) for escaping
-					value = value.replace("\\", "\\\\").replace("%", "%%")
+					value = value.replace("\\", "\\\\")#.replace("%", "%%")
 
 			elif f.operator == "=" and df and df.fieldtype in ["Link", "Data"]:  # TODO: Refactor if possible
 				value = f.value or "''"
@@ -983,6 +984,8 @@ class DatabaseQuery:
 		else:
 			condition = f"ifnull({column_name}, {fallback}) {f.operator} {value}"
 
+		if frappe.is_oracledb:
+			condition = EQUALS_TO_NULL.sub("is NULL", condition.rstrip())
 		return condition
 
 	def build_match_conditions(self, as_condition=True) -> str | list:
