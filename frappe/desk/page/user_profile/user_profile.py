@@ -48,23 +48,42 @@ def get_energy_points_percentage_chart_data(user, field):
 @frappe.whitelist()
 def get_user_rank(user):
 	month_start = datetime.today().replace(day=1)
-	monthly_rank = frappe.get_all(
-		"Energy Point Log",
-		group_by="`tabEnergy Point Log`.`user`",
-		filters={"creation": [">", month_start], "type": ["!=", "Review"]},
-		fields=["user", "sum(points)"],
-		order_by="sum(points) desc",
-		as_list=True,
-	)
+	if frappe.is_oracledb:
+		monthly_rank = frappe.get_all(
+			"Energy Point Log",
+			group_by='tabEnergy_Point_Log."user"',
+			filters={"creation": [">", month_start], "type": ["!=", "Review"]},
+			fields=["user", 'sum("points")'],
+			order_by='sum("points") desc',
+			as_list=True,
+		)
 
-	all_time_rank = frappe.get_all(
-		"Energy Point Log",
-		group_by="`tabEnergy Point Log`.`user`",
-		filters={"type": ["!=", "Review"]},
-		fields=["user", "sum(points)"],
-		order_by="sum(points) desc",
-		as_list=True,
-	)
+		all_time_rank = frappe.get_all(
+			"Energy Point Log",
+			group_by='tabEnergy_Point_Log."user"',
+			filters={"type": ["!=", "Review"]},
+			fields=["user", 'sum("points")'],
+			order_by='sum("points") desc',
+			as_list=True,
+		)
+	else:
+		monthly_rank = frappe.get_all(
+			"Energy Point Log",
+			group_by="`tabEnergy Point Log`.`user`",
+			filters={"creation": [">", month_start], "type": ["!=", "Review"]},
+			fields=["user", "sum(points)"],
+			order_by="sum(points) desc",
+			as_list=True,
+		)
+
+		all_time_rank = frappe.get_all(
+			"Energy Point Log",
+			group_by="`tabEnergy Point Log`.`user`",
+			filters={"type": ["!=", "Review"]},
+			fields=["user", "sum(points)"],
+			order_by="sum(points) desc",
+			as_list=True,
+		)
 
 	return {
 		"monthly_rank": [i + 1 for i, r in enumerate(monthly_rank) if r[0] == user],
