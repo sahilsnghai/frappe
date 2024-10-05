@@ -63,6 +63,9 @@ class FrappeTable(Table):
 			return f"FrappeTable('{self._table_name}', schema='{self._schema}')"
 		return f"FrappeTable('{self._table_name}')"
 
+	def update_schema(self, schema):
+		self._schema = self._init_schema(schema)
+
 	def get_sql(self, **kwargs: Any) -> str:
 		# quote_char = kwargs.get("quote_char")
 		# # FIXME escape
@@ -332,6 +335,7 @@ class FrappeOracleQueryBuilder(OracleQueryBuilder):
 
 class OracleDB(Base, OracleQuery):
 	Field = FrappeField
+	Table = FrappeTable
 	# TODO: Find a better way to do this
 	# These are interdependent query changes that need fixing. These
 	# translations happen in the same query. But there is no check to see if
@@ -367,6 +371,8 @@ class OracleDB(Base, OracleQuery):
 	@classmethod
 	def get_table(cls, table):
 		if isinstance(table, FrappeTable):
+			if table._schema is None:
+				table.update_schema(frappe.conf.db_name.upper())
 			return table
 
 		if not isinstance(table, str) and table.get_table_name() not in FrappeOracleQueryBuilder.IGNORE_TABLES_LIST:

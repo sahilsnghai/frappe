@@ -7,7 +7,7 @@ from pypika.functions import *
 from pypika.terms import Arithmetic, ArithmeticExpression, CustomFunction, Function
 
 import frappe
-from frappe.query_builder.custom import GROUP_CONCAT, MATCH, STRING_AGG, TO_TSVECTOR
+from frappe.query_builder.custom import GROUP_CONCAT, MATCH, STRING_AGG, TO_TSVECTOR, LEVENSHTEIN_DISTANCE
 from frappe.query_builder.utils import ImportMapper, db_type_is
 
 from .utils import PseudoColumn
@@ -65,7 +65,8 @@ class Truncate(Function):
 
 GroupConcat = ImportMapper({db_type_is.MARIADB: GROUP_CONCAT, db_type_is.POSTGRES: STRING_AGG})
 
-Match = ImportMapper({db_type_is.MARIADB: MATCH, db_type_is.POSTGRES: TO_TSVECTOR})
+Match = ImportMapper({db_type_is.MARIADB: MATCH, db_type_is.POSTGRES: TO_TSVECTOR,
+					  db_type_is.ORACLEDB: LEVENSHTEIN_DISTANCE})
 
 
 class _PostgresTimestamp(ArithmeticExpression):

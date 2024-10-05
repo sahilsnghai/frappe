@@ -45,7 +45,7 @@ class GlobalSearchSettings(Document):
 
 def get_doctypes_for_global_search():
 	def get_from_db():
-		doctypes = frappe.get_all("Global Search DocType", fields=["document_type"], order_by="idx ASC")
+		doctypes = frappe.get_all("Global Search DocType", fields=["document_type"], order_by='"idx" ASC' if frappe.is_oracledb else "idx ASC")
 		return [d.document_type for d in doctypes] or []
 
 	return frappe.cache.hget("global_search", "search_priorities", get_from_db)

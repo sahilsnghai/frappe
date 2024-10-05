@@ -568,7 +568,10 @@ def get_linked_fields(doctype, without_ignore_user_permissions_enabled=False):
 
 	# find links of parents
 	links = frappe.get_all("DocField", fields=["parent", "fieldname"], filters=filters, as_list=1)
-	links += frappe.get_all("Custom Field", fields=["dt as parent", "fieldname"], filters=filters, as_list=1)
+	if frappe.is_oracledb:
+		links += frappe.get_all("Custom Field", fields=['"dt" parent', "fieldname"], filters=filters, as_list=1)
+	else:
+		links += frappe.get_all("Custom Field", fields=["dt as parent", "fieldname"], filters=filters, as_list=1)
 
 	ret = {}
 
@@ -614,16 +617,28 @@ def get_dynamic_linked_fields(doctype, without_ignore_user_permissions_enabled=F
 		filters.append(["ignore_user_permissions", "!=", 1])
 
 	# find dynamic links of parents
-	links = frappe.get_all(
-		"DocField",
-		fields=["parent as doctype", "fieldname", "options as doctype_fieldname"],
-		filters=filters,
-	)
-	links += frappe.get_all(
-		"Custom Field",
-		fields=["dt as doctype", "fieldname", "options as doctype_fieldname"],
-		filters=filters,
-	)
+	if frappe.is_oracledb:
+		links = frappe.get_all(
+			"DocField",
+			fields=['"parent" doctype', "fieldname", '"options" doctype_fieldname'],
+			filters=filters,
+		)
+		links += frappe.get_all(
+			"Custom Field",
+			fields=['"dt" doctype', "fieldname", '"options" doctype_fieldname'],
+			filters=filters,
+		)
+	else:
+		links = frappe.get_all(
+			"DocField",
+			fields=["parent as doctype", "fieldname", "options as doctype_fieldname"],
+			filters=filters,
+		)
+		links += frappe.get_all(
+			"Custom Field",
+			fields=["dt as doctype", "fieldname", "options as doctype_fieldname"],
+			filters=filters,
+		)
 
 	for df in links:
 		if is_single(df.doctype):

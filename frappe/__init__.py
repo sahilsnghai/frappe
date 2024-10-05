@@ -1081,7 +1081,7 @@ def has_permission(
 	:param user: [optional] Check for given user. Default: current user.
 	:param parent_doctype: Required when checking permission for a child DocType (unless doc is specified).
 	"""
-	print(f"==>> has_permission {doctype=} | {ptype=} | {doc=} | {user=} | {parent_doctype=} <<== ")
+	# print(f"==>> has_permission {doctype=} | {ptype=} | {doc=} | {user=} | {parent_doctype=} <<== ")
 	import frappe.permissions
 
 	if not doctype and doc:

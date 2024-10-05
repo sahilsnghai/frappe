@@ -28,6 +28,34 @@ class STRING_AGG(DistinctOptionFunction):
 		"""
 		super().__init__("STRING_AGG", column, separator, alias=alias)
 
+class LEVENSHTEIN_DISTANCE(DistinctOptionFunction):
+	def __init__(self, column: str, *args, **kwargs):
+		alias = kwargs.get("alias")
+		super().__init__("UTL_MATCH.EDIT_DISTANCE", column, *args, alias=alias)
+		self._Against = False
+
+	def get_sql(self, **kwargs: Any) -> str:
+		expr = "{}('{}', {})".format(
+			self.name,
+			self._Against,
+			self.args[0].get_sql()
+		)
+		if self.alias:
+			return f'{expr} {self.alias}'
+		return expr
+
+	def get_alias(self):
+		return self.alias
+
+	@builder
+	def Against(self, text: str):
+		"""[ Text that has to be searched against ]
+
+		Args:
+		        text (str): [ the text string that we match it against ]
+		"""
+		self._Against = text
+
 
 class MATCH(DistinctOptionFunction):
 	def __init__(self, column: str, *args, **kwargs):
