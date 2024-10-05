@@ -128,7 +128,7 @@ def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 				WHERE
 					dl."parent" = addr."name" and dl."link_doctype" = '{doctype}' and
 					dl."link_name" = '{name}' and ifnull(addr."disabled", 0) = 0 and
-					'{preferred_key}' = 1
+					"{preferred_key}" = 1
 				""",
                 [],
                 as_dict=1,
@@ -305,9 +305,9 @@ def address_query(doctype, txt, searchfield, start, page_len, filters):
 	if frappe.is_oracledb:
 		for field in searchfields:
 			if search_condition == "":
-				search_condition += f'tabAddress."{field}" like {"%" + txt + "%"}'
+				search_condition += f'tabAddress."{field}" like %{txt}%"'
 			else:
-				search_condition += f' or tabAddress."{field}" like {"%" + txt + "%"}'
+				search_condition += f' or tabAddress."{field}" like %{txt}%'
 
 		# Use custom title field if set
 		if meta.show_title_field_in_link and meta.title_field:
@@ -321,26 +321,6 @@ def address_query(doctype, txt, searchfield, start, page_len, filters):
 		else:
 			extra_query_fields = 'tabAddress."country"'
 
-	else:
-		for field in searchfields:
-			if search_condition == "":
-				search_condition += f"`tabAddress`.`{field}` like %(txt)s"
-			else:
-				search_condition += f" or `tabAddress`.`{field}` like %(txt)s"
-		# Use custom title field if set
-		if meta.show_title_field_in_link and meta.title_field:
-			title = f"`tabAddress`.{meta.title_field}"
-		else:
-			title = "`tabAddress`.city"
-
-		# Get additional search fields
-		if searchfields:
-			extra_query_fields = ",".join([f"`tabAddress`.{field}" for field in searchfields])
-		else:
-			extra_query_fields = "`tabAddress`.country"
-
-
-	if frappe.is_oracledb:
 		return frappe.db.sql(
             f"""
 			SELECT
@@ -367,42 +347,60 @@ def address_query(doctype, txt, searchfield, start, page_len, filters):
             [],
         )
 
-	return frappe.db.sql(
-		"""select
-			`tabAddress`.name, {title}, {extra_query_fields}
-		from
-			`tabAddress`
-		join `tabDynamic Link`
-			on (`tabDynamic Link`.parent = `tabAddress`.name and `tabDynamic Link`.parenttype = 'Address')
-		where
-			`tabDynamic Link`.link_doctype = %(link_doctype)s and
-			`tabDynamic Link`.link_name = %(link_name)s and
-			ifnull(`tabAddress`.disabled, 0) = 0 and
-			({search_condition})
-			{mcond} {condition}
-		order by
-			case
-				when locate(%(_txt)s, `tabAddress`.name) != 0
-				then locate(%(_txt)s, `tabAddress`.name)
-				else 99999
-			end,
-			`tabAddress`.idx desc, `tabAddress`.name
-		limit %(page_len)s offset %(start)s""".format(
-			mcond=get_match_cond(doctype),
-			search_condition=search_condition,
-			condition=condition or "",
-			title=title,
-			extra_query_fields=extra_query_fields,
-		),
-		{
-			"txt": "%" + txt + "%",
-			"_txt": txt.replace("%", ""),
-			"start": start,
-			"page_len": page_len,
-			"link_name": link_name,
-			"link_doctype": link_doctype,
-		},
-	)
+	else:
+		for field in searchfields:
+			if search_condition == "":
+				search_condition += f"`tabAddress`.`{field}` like %(txt)s"
+			else:
+				search_condition += f" or `tabAddress`.`{field}` like %(txt)s"
+		# Use custom title field if set
+		if meta.show_title_field_in_link and meta.title_field:
+			title = f"`tabAddress`.{meta.title_field}"
+		else:
+			title = "`tabAddress`.city"
+
+		# Get additional search fields
+		if searchfields:
+			extra_query_fields = ",".join([f"`tabAddress`.{field}" for field in searchfields])
+		else:
+			extra_query_fields = "`tabAddress`.country"
+
+		return frappe.db.sql(
+			"""select
+				`tabAddress`.name, {title}, {extra_query_fields}
+			from
+				`tabAddress`
+			join `tabDynamic Link`
+				on (`tabDynamic Link`.parent = `tabAddress`.name and `tabDynamic Link`.parenttype = 'Address')
+			where
+				`tabDynamic Link`.link_doctype = %(link_doctype)s and
+				`tabDynamic Link`.link_name = %(link_name)s and
+				ifnull(`tabAddress`.disabled, 0) = 0 and
+				({search_condition})
+				{mcond} {condition}
+			order by
+				case
+					when locate(%(_txt)s, `tabAddress`.name) != 0
+					then locate(%(_txt)s, `tabAddress`.name)
+					else 99999
+				end,
+				`tabAddress`.idx desc, `tabAddress`.name
+			limit %(page_len)s offset %(start)s""".format(
+				mcond=get_match_cond(doctype),
+				search_condition=search_condition,
+				condition=condition or "",
+				title=title,
+				extra_query_fields=extra_query_fields,
+			),
+			{
+				"txt": "%" + txt + "%",
+				"_txt": txt.replace("%", ""),
+				"start": start,
+				"page_len": page_len,
+				"link_name": link_name,
+				"link_doctype": link_doctype,
+			},
+		)
 
 
 def get_condensed_address(doc):

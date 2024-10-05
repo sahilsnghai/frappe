@@ -172,24 +172,21 @@ class Contact(Document):
 
 
 def get_default_contact(doctype, name):
-	"""Returns default contact for the given doctype, name"""
-	if frappe.is_oracledb:
-		out = frappe.db.sql(
-		f"""select "parent",
-			IFNULL((select "is_primary_contact" from {frappe.conf.db_name}."tabContact" c where c."name" = dl."parent"), 0)
-				as is_primary_contact
-		from
-			{frappe.conf.db_name}."tabDynamic Link" dl
-		where
-			dl."link_doctype"='{doctype}' and
-			dl."link_name"='{name}' and
-			dl."parenttype" = 'Contact' """,
-		[],
-		as_dict=True,
-	)
-	else:
-		out = frappe.db.sql(
-			"""select parent,
+    """Returns default contact for the given doctype, name"""
+    if frappe.is_oracledb:
+        out = frappe.db.sql(
+            f"""SELECT dl."parent",
+				NVL((SELECT c."is_primary_contact" FROM {frappe.conf.db_name}."tabContact" c
+					WHERE c."name" = dl."parent"), 0) AS is_primary_contact
+			FROM {frappe.conf.db_name}."tabDynamic Link" dl
+			WHERE dl."link_doctype" = '{doctype}' AND dl."link_name" = '{name}' AND
+			dl."parenttype" = 'Contact'""",
+            [],
+            as_dict=True,
+        )
+    else:
+        out = frappe.db.sql(
+            """select parent,
 				IFNULL((select is_primary_contact from tabContact c where c.name = dl.parent), 0)
 					as is_primary_contact
 			from
@@ -198,17 +195,17 @@ def get_default_contact(doctype, name):
 				dl.link_doctype=%s and
 				dl.link_name=%s and
 				dl.parenttype = 'Contact' """,
-			(doctype, name),
-			as_dict=True,
-		)
+            (doctype, name),
+            as_dict=True,
+        )
 
-	if out:
-		for contact in out:
-			if contact.is_primary_contact:
-				return contact.parent
-		return out[0].parent
-	else:
-		return None
+    if out:
+        for contact in out:
+            if contact.is_primary_contact:
+                return contact.parent
+        return out[0].parent
+    else:
+        return None
 
 
 @frappe.whitelist()

@@ -220,12 +220,21 @@ def reset_perms(context):
 		try:
 			frappe.init(site=site)
 			frappe.connect()
-			for d in frappe.db.sql_list(
-				"""select name from `tabDocType`
-				where istable=0 and custom=0"""
+
+			if frappe.is_oracledb:
+				for d in frappe.db.sql_list(
+				f"""select tabDocType."name" from {frappe.conf.db_name}."tabDocType" tabDocType
+				where tabDocType."istable"=0 and tabDocType."custom"=0"""
 			):
-				frappe.clear_cache(doctype=d)
-				reset_perms(d)
+					frappe.clear_cache(doctype=d)
+					reset_perms(d)
+			else:
+				for d in frappe.db.sql_list(
+					"""select name from `tabDocType`
+					where istable=0 and custom=0"""
+				):
+					frappe.clear_cache(doctype=d)
+					reset_perms(d)
 		finally:
 			frappe.destroy()
 	if not context.sites:
