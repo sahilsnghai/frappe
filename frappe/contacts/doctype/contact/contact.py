@@ -172,28 +172,40 @@ class Contact(Document):
 
 
 def get_default_contact(doctype, name):
-	"""Returns default contact for the given doctype, name"""
-	out = frappe.db.sql(
-		"""select parent,
-			IFNULL((select is_primary_contact from tabContact c where c.name = dl.parent), 0)
-				as is_primary_contact
-		from
-			`tabDynamic Link` dl
-		where
-			dl.link_doctype=%s and
-			dl.link_name=%s and
-			dl.parenttype = 'Contact' """,
-		(doctype, name),
-		as_dict=True,
-	)
+    """Returns default contact for the given doctype, name"""
+    if frappe.is_oracledb:
+        out = frappe.db.sql(
+            f"""SELECT dl."parent",
+				NVL((SELECT c."is_primary_contact" FROM {frappe.conf.db_name}."tabContact" c
+					WHERE c."name" = dl."parent"), 0) AS is_primary_contact
+			FROM {frappe.conf.db_name}."tabDynamic Link" dl
+			WHERE dl."link_doctype" = '{doctype}' AND dl."link_name" = '{name}' AND
+			dl."parenttype" = 'Contact'""",
+            [],
+            as_dict=True,
+        )
+    else:
+        out = frappe.db.sql(
+            """select parent,
+				IFNULL((select is_primary_contact from tabContact c where c.name = dl.parent), 0)
+					as is_primary_contact
+			from
+				`tabDynamic Link` dl
+			where
+				dl.link_doctype=%s and
+				dl.link_name=%s and
+				dl.parenttype = 'Contact' """,
+            (doctype, name),
+            as_dict=True,
+        )
 
-	if out:
-		for contact in out:
-			if contact.is_primary_contact:
-				return contact.parent
-		return out[0].parent
-	else:
-		return None
+    if out:
+        for contact in out:
+            if contact.is_primary_contact:
+                return contact.parent
+        return out[0].parent
+    else:
+        return None
 
 
 @frappe.whitelist()
@@ -257,6 +269,32 @@ def contact_query(doctype, txt, searchfield, start, page_len, filters):
 
 	link_doctype = filters.pop("link_doctype")
 	link_name = filters.pop("link_name")
+
+	if frappe.is_oracledb:
+		return frappe.db.sql(
+			f"""select
+				tabContact."name", tabContact."full_name", tabContact."company_name"
+			from
+				{frappe.conf.db_name}."tabContact" tabContact, {frappe.conf.db_name}."tabDynamic Link" tabDynamic_Link
+			where
+				tabDynamic_Link."parent" = tabContact."name" and
+				tabDynamic_Link."parenttype" = 'Contact' and
+				tabDynamic_Link."link_doctype" = '{link_doctype}' and
+				tabDynamic_Link."link_name" = '{link_name}' and
+				tabContact."{searchfield}" like {"%" + txt + "%"}
+				{get_match_cond(doctype)}
+			order by
+				if(locate('{txt.replace("%", "")}', tabContact."full_name"), locate('{txt.replace("%", "")}', tabContact."company_name"), 99999),
+				CASE
+					WHEN INSTR(tabContact."full_name", :'{txt.replace("%", "")}') != 0 THEN INSTR(tabContact."full_name", '{txt.replace("%", "")}')
+					WHEN INSTR(tabContact."company_name", '{txt.replace("%", "")}') != 0 THEN INSTR(tabContact."company_name", '{txt.replace("%", "")}')
+					ELSE 99999
+				END,
+				tabContact."idx" desc,
+				tabContact."full_name"
+			OFFSET {start} ROWS FETCH NEXT {page_len} ROWS ONLY""",
+			[],
+		)
 
 	return frappe.db.sql(
 		f"""select
