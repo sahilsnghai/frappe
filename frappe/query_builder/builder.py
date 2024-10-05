@@ -24,7 +24,7 @@ class FrappeField(Field):
 			field_sql = self.name
 
 			# Need to add namespace if the table has an alias
-			if self.table and (with_namespace or self.table.alias):
+			if self.table and (with_namespace or self.table.alias) and self.table._table_name not in FrappeOracleQueryBuilder.IGNORE_TABLES_LIST:
 				table_name = self.table.get_table_name()
 				if field_sql[0] == '"' and field_sql[-1] == '"':
 					field_sql = f"{table_name}.{field_sql}"
@@ -371,7 +371,7 @@ class OracleDB(Base, OracleQuery):
 	@classmethod
 	def get_table(cls, table):
 		if isinstance(table, FrappeTable):
-			if table._schema is None:
+			if table._schema is None and table._table_name not in FrappeOracleQueryBuilder.IGNORE_TABLES_LIST:
 				table.update_schema(frappe.conf.db_name.upper())
 			return table
 
