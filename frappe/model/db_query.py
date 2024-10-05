@@ -31,6 +31,7 @@ from frappe.utils import (
 )
 from frappe.utils.data import DateTimeLikeObject, get_datetime, getdate, sbool
 
+EQUALS_TO_NULL = re.compile(r" =\s*NULL$", flags=re.IGNORECASE)
 LOCATE_PATTERN = re.compile(r"locate\([^,]+,\s*[`\"]?name[`\"]?\s*\)", flags=re.IGNORECASE)
 LOCATE_CAST_PATTERN = re.compile(r"locate\(([^,]+),\s*([`\"]?name[`\"]?)\s*\)", flags=re.IGNORECASE)
 FUNC_IFNULL_PATTERN = re.compile(r"(strpos|ifnull|coalesce)\(\s*[`\"]?name[`\"]?\s*,", flags=re.IGNORECASE)
@@ -341,7 +342,21 @@ class DatabaseQuery:
 			args.order_by = args.order_by and (" order by " + args.order_by) or ""
 
 		self.validate_order_by_and_group_by(self.group_by)
-		args.group_by = self.group_by and (" group by " + self.group_by) or ""
+		if frappe.is_oracledb and self.group_by:
+			_group_by = []
+			for i in self.group_by.split(','):
+				if re.search('\w+\."\w+"', i):
+					_group_by.append(i)
+				elif re.match('^["\'`]\w+["\'`]$', i):
+					_group_by.append('"{}"'.format(i[1:-1]))
+				else:
+					_group_by.append(f'"{i}"')
+
+			_group_by =", ".join(_group_by)
+
+		else:
+			_group_by = self.group_by
+		args.group_by = _group_by and (" group by " + _group_by) or ""
 
 		return args
 
@@ -524,9 +539,19 @@ class DatabaseQuery:
 
 	def append_table(self, table_name):
 		self.tables.append(table_name)
-		if '`' in table_name:
-			table_name = table_name.replace('`', '')
-		doctype = table_name[4:-1]
+		if frappe.is_oracledb:
+			if (table_name[0] == '`' and table_name[-1] == '`') or (
+				table_name[0] == '"' and table_name[-1] == '"'
+			):
+				doctype = table_name[4:-1]
+			else:
+				doctype = table_name[3:]
+
+		else:
+			if '`' in table_name:
+				table_name = table_name.replace('`', '')
+			doctype = table_name[4:-1]
+
 		self.check_read_permission(doctype)
 
 	def append_link_table(self, doctype, fieldname):
@@ -547,6 +572,7 @@ class DatabaseQuery:
 		return linked_table
 
 	def check_read_permission(self, doctype: str, parent_doctype: str | None = None):
+		print(f"==>> Read permission: {doctype} <<==")
 		if self.flags.ignore_permissions:
 			return
 
@@ -868,13 +894,13 @@ class DatabaseQuery:
 				fallback = f"'{FallBackDateTimeStr}'"
 
 			if f.operator.lower() in (">", ">=") and (
-				f.fieldname in ("creation", "modified")
+				re.search(r'"?(creation|modified)"?', f.fieldname)
 				or (df and (df.fieldtype == "Date" or df.fieldtype == "Datetime"))
 			):
 				# Null values can never be greater than any non-null value
 				can_be_null = False
 
-			if f.operator in (">", "<", ">=", "<=") and (f.fieldname in ("creation", "modified")):
+			if f.operator in (">", "<", ">=", "<=") and re.search(r'"?(creation|modified)"?', f.fieldname):
 				value = cstr(f.value)
 				can_be_null = False
 				fallback = f"'{FallBackDateTimeStr}'"
@@ -937,7 +963,7 @@ class DatabaseQuery:
 
 				if f.operator.lower() in ("like", "not like") and isinstance(value, str):
 					# because "like" uses backslash (\) for escaping
-					value = value.replace("\\", "\\\\").replace("%", "%%")
+					value = value.replace("\\", "\\\\")#.replace("%", "%%")
 
 			elif f.operator == "=" and df and df.fieldtype in ["Link", "Data"]:  # TODO: Refactor if possible
 				value = f.value or "''"
@@ -972,6 +998,8 @@ class DatabaseQuery:
 		else:
 			condition = f"ifnull({column_name}, {fallback}) {f.operator} {value}"
 
+		if frappe.is_oracledb:
+			condition = EQUALS_TO_NULL.sub("is NULL", condition.rstrip())
 		return condition
 
 	def build_match_conditions(self, as_condition=True) -> str | list:
@@ -1003,9 +1031,14 @@ class DatabaseQuery:
 			# skip user perm check if owner constraint is required
 			if requires_owner_constraint(role_permissions):
 				self._fetch_shared_documents = True
-				self.match_conditions.append(
-					f"`tab{self.doctype}`.`owner` = {frappe.db.escape(self.user, percent=False)}"
-				)
+				if frappe.is_oracledb:
+					self.match_conditions.append(
+						f"tab{self.doctype}.\"owner\" = {frappe.db.escape(self.user, percent=False)}"
+					)
+				else:
+					self.match_conditions.append(
+						f"`tab{self.doctype}`.`owner` = {frappe.db.escape(self.user, percent=False)}"
+					)
 
 			# add user permission only if role has read perm
 			elif role_permissions.get("read") or role_permissions.get("select"):
@@ -1071,9 +1104,14 @@ class DatabaseQuery:
 				if frappe.get_system_settings("apply_strict_user_permissions"):
 					condition = ""
 				else:
-					empty_value_condition = cast_name(
-						f"ifnull(`tab{self.doctype}`.`{df.get('fieldname')}`, '')=''"
-					)
+					if frappe.is_oracledb:
+						empty_value_condition = cast_name(
+							f"ifnull(tab{self.doctype}.\"{df.get('fieldname')}\", '')=''"
+						)
+					else:
+						empty_value_condition = cast_name(
+							f"ifnull(`tab{self.doctype}`.`{df.get('fieldname')}`, '')=''"
+						)
 					condition = empty_value_condition + " or "
 
 				for permission in user_permission_values:
@@ -1094,7 +1132,10 @@ class DatabaseQuery:
 
 				if docs:
 					values = ", ".join(frappe.db.escape(doc, percent=False) for doc in docs)
-					condition += cast_name(f"`tab{self.doctype}`.`{df.get('fieldname')}`") + f" in ({values})"
+					if frappe.is_oracledb:
+						condition += cast_name(f"tab{self.doctype}.\"{df.get('fieldname')}\"") + f" in ({values})"
+					else:
+						condition += cast_name(f"`tab{self.doctype}`.`{df.get('fieldname')}`") + f" in ({values})"
 					match_conditions.append(f"({condition})")
 					match_filters[df.get("options")] = docs
 

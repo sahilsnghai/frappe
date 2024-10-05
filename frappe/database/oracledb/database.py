@@ -353,6 +353,15 @@ class OracleDBDatabase(OracleDBExceptionUtil, OracleDBConnectionUtil, Database):
 			s = s.replace('%', '%%')
 		if s == "":
 			return "NULL"
+
+		if  re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+', s):
+			return  f"to_timestamp('{s}', 'yyyy-mm-dd hh24:mi:ss.ff6')"
+		if re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', s):
+			return f"to_timestamp('{s}', 'yyyy-mm-dd hh24:mi:ss')"
+		elif re.search(r'\d{4}-\d{2}-\d{2}', s):
+			return f"to_timestamp('{s}', 'YYYY-MM-DD')"
+		elif re.search("^to_timestamp", s):
+			return s
 		return "'" + s + "'"
 
 	def get_db_table_columns(self, table) -> list[str]:

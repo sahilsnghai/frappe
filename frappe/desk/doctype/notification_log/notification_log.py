@@ -56,6 +56,8 @@ def get_permission_query_conditions(for_user):
 	if for_user == "Administrator":
 		return
 
+	if frappe.is_oracledb:
+		return f"""(tabNotification_Log."for_user" = {frappe.db.escape(for_user)})"""
 	return f"""(`tabNotification Log`.for_user = {frappe.db.escape(for_user)})"""
 
 

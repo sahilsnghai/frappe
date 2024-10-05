@@ -1209,10 +1209,14 @@ def get_active_website_users():
 def get_permission_query_conditions(user):
 	if user == "Administrator":
 		return ""
-	else:
-		return """(`tabUser`.name not in ({standard_users}))""".format(
+
+	if frappe.is_oracledb:
+		return """(tabUser."name" not in ({standard_users}))""".format(
 			standard_users=", ".join(frappe.db.escape(user) for user in STANDARD_USERS)
 		)
+	return """(`tabUser`.name not in ({standard_users}))""".format(
+		standard_users=", ".join(frappe.db.escape(user) for user in STANDARD_USERS)
+	)
 
 
 def has_permission(doc, user):

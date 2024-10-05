@@ -361,7 +361,15 @@ class DocType(Document):
 						continue  # Invalid expression
 					link_df = new_meta.get_field(link_fieldname)
 
-					if frappe.db.db_type == "postgres":
+					if frappe.db.db_type == 'oracledb':
+						update_query = """
+						UPDATE {schema}."tab{doctype}"
+						SET "{fieldname}" = source."{source_fieldname}"
+						FROM {schema}."tab{link_doctype}" source
+						WHERE "{link_fieldname}" = source.name
+						AND NVL("{fieldname}", '')=''
+					"""
+					elif frappe.db.db_type == "postgres":
 						update_query = """
 							UPDATE `tab{doctype}`
 							SET `{fieldname}` = source.`{source_fieldname}`
@@ -385,6 +393,7 @@ class DocType(Document):
 							doctype=self.name,
 							fieldname=df.fieldname,
 							link_fieldname=link_fieldname,
+							schema=frappe.conf.db_name
 						)
 					)
 
@@ -646,12 +655,18 @@ class DocType(Document):
 		`doctype` property for Single type."""
 
 		if self.issingle:
-			frappe.db.sql("""update tabSingles set doctype=%s where doctype=%s""", (new, old))
-			frappe.db.sql(
-				"""update tabSingles set value=%s
-				where doctype=%s and field='name' and value = %s""",
-				(new, new, old),
-			)
+			if frappe.is_oracledb:
+				frappe.db.sql(f"""update {frappe.conf.db_name}."tabSingles" set doctype='{new}' where doctype='{old}'""", ())
+				frappe.db.sql(
+					f"""update {frappe.conf.db_name}."tabSingles" set "value"='{new}'
+					where doctype='{new}' and "field"='name' and "value" = '{old}'""", ())
+			else:
+				frappe.db.sql("""update tabSingles set doctype=%s where doctype=%s""", (new, old))
+				frappe.db.sql(
+					"""update tabSingles set value=%s
+					where doctype=%s and field='name' and value = %s""",
+					(new, new, old),
+				)
 		else:
 			frappe.db.rename_table(old, new)
 			frappe.db.commit()
@@ -1892,13 +1907,8 @@ def check_email_append_to(doc):
 	if doc.subject_field and not subject_field:
 		frappe.throw(_("Select a valid Subject field for creating documents from Email"))
 
-	if subject_field and subject_field.fieldtype not in [
-		"Data",
-		"Text",
-		"Long Text",
-		"Small Text",
-		"Text Editor",
-	]:
+	if subject_field and subject_field.fieldtype not in ["Data", "Text", "Long Text",
+														 "Small Text", "Text Editor"]:
 		frappe.throw(_("Subject Field type should be Data, Text, Long Text, Small Text, Text Editor"))
 
 	# Sender Field is mandatory
@@ -1908,7 +1918,7 @@ def check_email_append_to(doc):
 	if doc.sender_field and not sender_field:
 		frappe.throw(_("Select a valid Sender Field for creating documents from Email"))
 
-	if not sender_field.options == "Email":
+	if sender_field.options != "Email":
 		frappe.throw(_("Sender Field should have Email in options"))
 
 

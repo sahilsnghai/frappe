@@ -125,7 +125,7 @@ class ParameterizedFunction(Function):
 		return function_sql
 
 
-def conversion_column_value(value: str | int):
+def conversion_column_value(value: str | int, convert_to_date: bool = True):
 	if isinstance(value, str):
 		if not value:
 			return "''"
@@ -133,13 +133,13 @@ def conversion_column_value(value: str | int):
 		if value[0] == "'" and value[-1] == "'":
 			value = value[1:-1]
 
-		if re.search('^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$', value):  # noqa: W605
+		if convert_to_date and re.search('^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$', value):  # noqa: W605
 			ret = f"to_timestamp('{value}', 'yyyy-mm-dd hh24:mi:ss.ff6')"
-		elif re.search('^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', value):  # noqa: W605
+		elif convert_to_date and re.search('^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', value):  # noqa: W605
 			ret = f"to_timestamp('{value}', 'yyyy-mm-dd hh24:mi:ss')"
-		elif re.search('^\d{4}-\d{2}-\d{2}$', value):  # noqa: W605
+		elif convert_to_date and re.search('^\d{4}-\d{2}-\d{2}$', value):  # noqa: W605
 			ret = f"to_date('{value}', 'yyyy-mm-dd')"
-		elif value[0] != "'" or value[-1] != "'":
+		elif (value[0] != "'" or value[-1] != "'") and not value.startswith('to_clob'):
 			ret = "'{}'".format(value.replace("'", "''"))
 		else:
 			ret = value

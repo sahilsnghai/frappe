@@ -551,6 +551,10 @@ class BaseDocument:
 			ignore_virtual=True,
 		)
 
+		if frappe.is_oracledb and self.doctype == 'Version':
+			chunks = 1000
+			d['data'] = " || ".join(["to_clob('{}')".format(d['data'][i:i+chunks]) for i in range(0, len(d['data']), chunks)])
+
 		columns = list(d)
 		try:
 			if frappe.conf.db_type == 'oracledb':
@@ -562,8 +566,8 @@ class BaseDocument:
 						VALUES ({values})""".format(
 						schema=frappe.conf.db_name.upper(),
 						doctype=self.doctype,
-						columns=", ".join('"' + c + '"' for c in columns),
-						values=", ".join(_values)
+						columns=",".join('"' + c + '"' for c in columns),
+						values=",".join(_values)
 					), []
 					# list(d.values()),
 				)
