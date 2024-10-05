@@ -11,6 +11,7 @@ import uuid
 from typing import TYPE_CHECKING
 from urllib.parse import quote
 
+import oracledb
 import werkzeug.utils
 from werkzeug.exceptions import Forbidden, NotFound
 from werkzeug.local import LocalProxy
@@ -207,6 +208,9 @@ def json_handler(obj):
 	from re import Match
 
 	if isinstance(obj, datetime.date | datetime.datetime | datetime.time):
+		return str(obj)
+
+	elif isinstance(obj, oracledb.LOB):
 		return str(obj)
 
 	elif isinstance(obj, datetime.timedelta):

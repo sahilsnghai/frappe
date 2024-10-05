@@ -139,7 +139,7 @@ def conversion_column_value(value: str | int, convert_to_date: bool = True):
 			ret = f"to_timestamp('{value}', 'yyyy-mm-dd hh24:mi:ss')"
 		elif convert_to_date and re.search('^\d{4}-\d{2}-\d{2}$', value):  # noqa: W605
 			ret = f"to_date('{value}', 'yyyy-mm-dd')"
-		elif value[0] != "'" or value[-1] != "'":
+		elif (value[0] != "'" or value[-1] != "'") and not value.startswith('to_clob'):
 			ret = "'{}'".format(value.replace("'", "''"))
 		else:
 			ret = value
