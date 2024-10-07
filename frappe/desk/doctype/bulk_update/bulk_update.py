@@ -39,7 +39,13 @@ class BulkUpdate(Document):
 
 			condition = f" where {self.condition}"
 
-		docnames = frappe.db.sql_list(
+		if frappe.is_oracledb:
+			docnames = frappe.db.sql_list(
+    		f"""SELECT "name" FROM {frappe.conf.db_name}."tab{self.document_type}" {condition}
+        		OFFSET 0 ROWS FETCH NEXT {limit} ROWS ONLY"""
+		)
+		else:
+			docnames = frappe.db.sql_list(
 			f"""select name from `tab{self.document_type}`{condition} limit {limit} offset 0"""
 		)
 		return submit_cancel_or_update_docs(
