@@ -552,8 +552,12 @@ class BaseDocument:
 			ignore_virtual=True,
 		)
 
-		if frappe.is_oracledb and self.doctype == 'Version':
-			d['data'] = to_clob_oracle(data=d['data'], chunks=1000)
+		if frappe.is_oracledb:
+			match self.doctype:
+				case 'Version':
+					d['data'] = to_clob_oracle(data=d['data'], chunks=1000)
+				case 'Error Log':
+					d['error'] = to_clob_oracle(data=d['error'], chunks=1000)
 
 		columns = list(d)
 		try:

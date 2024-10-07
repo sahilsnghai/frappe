@@ -38,6 +38,9 @@ def get_permission_query_conditions(user):
 	if not user:
 		user = frappe.session.user
 
+	if frappe.is_oracledb:
+		return f"""(tabDashboard_Settings."name" = {frappe.db.escape(user)})"""
+
 	return f"""(`tabDashboard Settings`.name = {frappe.db.escape(user)})"""
 
 

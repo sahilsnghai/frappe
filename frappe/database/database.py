@@ -104,7 +104,7 @@ class Database:
 	STANDARD_VARCHAR_COLUMNS = ("name", "owner", "modified_by")
 	DEFAULT_COLUMNS = ("name", "creation", "modified", "modified_by", "owner", "docstatus", "idx")
 	CHILD_TABLE_COLUMNS = ("parent", "parenttype", "parentfield")
-	MAX_WRITES_PER_TRANSACTION = 200_000
+	MAX_WRITES_PER_TRANSACTION = 2
 
 	class InvalidColumnName(frappe.ValidationError):
 		pass
@@ -273,6 +273,8 @@ class Database:
 				# if '%%all%%' in query:
 				# 	raise NotImplementedError()
 					# frame_printer()
+				if '`tabDashboard_Settings`.name = \'Administrator\'' in query:
+					pass
 				print(f"[Query]: {sqlparse.format(query, indent=4)}")
 				self._cursor.execute(query)
 		except Exception as e:
@@ -475,6 +477,7 @@ class Database:
 
 		if query.lstrip()[:6].lower() in ("update", "insert", "delete"):
 			self.transaction_writes += 1
+			self.commit()
 			if self.transaction_writes > self.MAX_WRITES_PER_TRANSACTION:
 				if self.auto_commit_on_many_writes:
 					self.commit()

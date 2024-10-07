@@ -788,7 +788,7 @@ class DatabaseQuery:
 		additional_filters_config = get_additional_filters_from_hooks()
 		f = get_filter(self.doctype, f, additional_filters_config)
 
-		if frappe.conf.db_type == 'oracledb':
+		if frappe.is_oracledb:
 			tname = f'tab{f.doctype}'
 		else:
 			tname = "`tab" + f.doctype + "`"
