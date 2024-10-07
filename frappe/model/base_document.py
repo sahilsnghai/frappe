@@ -21,6 +21,7 @@ from frappe.model import (
 )
 from frappe.model.docstatus import DocStatus
 from frappe.model.naming import set_new_name
+from frappe.model.utils import to_clob_oracle
 from frappe.model.utils.link_count import notify_link_count
 from frappe.modules import load_doctype_module
 from frappe.utils import (
@@ -506,8 +507,8 @@ class BaseDocument:
 
 		return doc
 
-	def as_json(self):
-		return frappe.as_json(self.as_dict())
+	def as_json(self, **kwargs):
+		return frappe.as_json(self.as_dict(), **kwargs)
 
 	def get_table_field_doctype(self, fieldname):
 		try:
@@ -552,8 +553,7 @@ class BaseDocument:
 		)
 
 		if frappe.is_oracledb and self.doctype == 'Version':
-			chunks = 1000
-			d['data'] = " || ".join(["to_clob('{}')".format(d['data'][i:i+chunks]) for i in range(0, len(d['data']), chunks)])
+			d['data'] = to_clob_oracle(data=d['data'], chunks=1000)
 
 		columns = list(d)
 		try:

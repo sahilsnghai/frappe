@@ -317,12 +317,12 @@ def get_communication_data(
 		return frappe.db.sql(
 			"""
 			SELECT *
-			FROM (({part1}) UNION ({part2})) combined
+			FROM (({part1}) UNION ALL ({part2})) combined
 			{group_by}
 			ORDER BY "communication_date" DESC
 			OFFSET {start} ROWS
 			FETCH NEXT {limit} ROWS ONLY
-		""".format(part1=part1, part2=part2, group_by=(group_by or ""), limit=limit, start=frappe.utils.cint(start)),
+		""".format(part1=part1,  part2=part2, group_by=(group_by or ""), limit=limit, start=frappe.utils.cint(start)),
 			[],
 			as_dict=as_dict,
 		)
@@ -376,7 +376,8 @@ def get_communication_data(
 				ORDER BY communication_date DESC
 				LIMIT %(limit)s
 				OFFSET %(start)s
-			""".format(part1=part1, part2=part2, group_by=(group_by or "")),
+			""".format(part1=part1,
+					   part2=part2, group_by=(group_by or "")),
 				dict(
 					doctype=doctype,
 					name=name,

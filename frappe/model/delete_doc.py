@@ -3,6 +3,7 @@
 
 import os
 import shutil
+from xml.etree.ElementTree import indent
 
 import frappe
 import frappe.defaults
@@ -12,7 +13,7 @@ from frappe.desk.doctype.tag.tag import delete_tags_for_document
 from frappe.model.docstatus import DocStatus
 from frappe.model.dynamic_links import get_dynamic_link_map
 from frappe.model.naming import revert_series_if_last
-from frappe.model.utils import is_virtual_doctype
+from frappe.model.utils import is_virtual_doctype, to_clob_oracle
 from frappe.utils.file_manager import remove_all
 from frappe.utils.global_search import delete_for_document
 from frappe.utils.password import delete_all_passwords_for
@@ -182,12 +183,16 @@ def delete_doc(
 def add_to_deleted_document(doc):
 	"""Add this document to Deleted Document table. Called after delete"""
 	if doc.doctype != "Deleted Document" and frappe.flags.in_install != "frappe":
+		if frappe.is_oracledb:
+			_data = to_clob_oracle(doc.as_json(indent=None))
+		else:
+			_data = doc.as_json()
 		frappe.get_doc(
 			dict(
 				doctype="Deleted Document",
 				deleted_doctype=doc.doctype,
 				deleted_name=doc.name,
-				data=doc.as_json(),
+				data=_data,
 				owner=frappe.session.user,
 			)
 		).db_insert()

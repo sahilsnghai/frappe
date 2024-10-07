@@ -142,3 +142,8 @@ def is_single_doctype(doctype: str) -> bool:
 		return False
 
 	return frappe.db.get_value("DocType", doctype, "issingle")
+
+
+def to_clob_oracle(data: str, chunks: int = 1000):
+	return " || ".join("to_clob('{text}')".format(text=data[i:i + chunks].replace("'", "''"))
+					   for i in range(0, len(data), chunks))

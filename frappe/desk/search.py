@@ -166,7 +166,7 @@ def search_widget(
 
 		# Insert title field query after name
 		if meta.show_title_field_in_link and meta.title_field:
-			formatted_fields.insert(1, f'tab{meta.name.replace(" ", "_")}."{meta.title_field}" as label')
+			formatted_fields.insert(1, f'tab{meta.name.replace(" ", "_")}."{meta.title_field}" label')
 
 		order_by_based_on_meta = get_order_by(doctype, meta)
 		# `idx` is number of times a document is referred, check link_count.py
@@ -329,7 +329,7 @@ def get_names_for_mentions(search_term):
 def get_users_for_mentions():
 	return frappe.get_all(
 		"User",
-		fields=["name as id", "full_name as value"],
+		fields=['"name" id', '"full_name" value'] if frappe.is_oracledb else ["name as id", "full_name as value"],
 		filters={
 			"name": ["not in", ("Administrator", "Guest")],
 			"allowed_in_mentions": True,

@@ -184,7 +184,7 @@ class OracleDBDatabase(OracleDBExceptionUtil, OracleDBConnectionUtil, Database):
 			"Check": ("NUMBER", "3,0"),
 			"Small Text": ("VARCHAR2", "4000"),
 			"Long Text": ("VARCHAR2", "4000"),
-			"Code": ("VARCHAR2", "4000"),
+			"Code": ("CLOB", ""),   # For large datpa
 			"Text Editor": ("VARCHAR2", "4000"),
 			"Markdown Editor": ("VARCHAR2", "4000"),
 			"HTML Editor": ("VARCHAR2", "4000"),
