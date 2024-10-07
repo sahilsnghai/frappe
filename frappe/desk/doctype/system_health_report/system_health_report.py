@@ -268,7 +268,7 @@ class SystemHealthReport(Document):
 				FROM {frappe.conf.db_name}."tabError Log"
 				WHERE "modified" > {threshold} AND "creation" > {threshold}
 				GROUP BY "method"
-				ORDER BY "occurrences" DESC
+				ORDER BY occurrences DESC
 				OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY
 				""",
 				[],
