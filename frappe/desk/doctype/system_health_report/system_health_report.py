@@ -264,7 +264,7 @@ class SystemHealthReport(Document):
 		if frappe.is_oracledb:
 			top_errors = frappe.db.sql(
 				f"""
-				SELECT "method" AS title, COUNT(*) AS occurrences
+				SELECT "method" title, COUNT(*) occurrences
 				FROM {frappe.conf.db_name}."tabError Log"
 				WHERE "modified" > {threshold} AND "creation" > {threshold}
 				GROUP BY "method"

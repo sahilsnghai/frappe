@@ -205,7 +205,7 @@ def extract_fieldnames(field):
 	columns = Parser(f"select {field} from _dummy").columns
 
 	if frappe.is_oracledb:
-		columns = Parser(f'select d."{field}" from {frappe.conf.db_name}."_dummy" d').columns
+		columns = Parser(f'select "{field}" from {frappe.conf.db_name}."_dummy"').columns
 
 	if not columns:
 		f = field.lower()
