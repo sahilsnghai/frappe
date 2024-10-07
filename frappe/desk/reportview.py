@@ -204,6 +204,9 @@ def extract_fieldnames(field):
 
 	columns = Parser(f"select {field} from _dummy").columns
 
+	if frappe.is_oracledb:
+		columns = Parser(f'select d."{field}" from {frappe.conf.db_name}."_dummy" d').columns
+
 	if not columns:
 		f = field.lower()
 		if ("count(" in f or "sum(" in f or "avg(" in f) and "*" in f:

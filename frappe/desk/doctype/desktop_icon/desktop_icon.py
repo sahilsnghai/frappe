@@ -171,10 +171,17 @@ def add_user_icon(_doctype, _report=None, label=None, link=None, type="link", st
 			clear_desktop_icons_cache()
 
 	else:
-		idx = (
-			frappe.db.sql("select max(idx) from `tabDesktop Icon` where owner=%s", frappe.session.user)[0][0]
-			or frappe.db.sql("select count(*) from `tabDesktop Icon` where standard=1")[0][0]
-		)
+		if frappe.is_oracledb:
+			idx = (
+				frappe.db.sql(f'SELECT MAX("idx") FROM {frappe.conf.db_name}."tabDesktop Icon" WHERE "owner"= \'{frappe.session.user}\'', [])[0][0]
+				or frappe.db.sql(f'SELECT COUNT(*) FROM {frappe.conf.db_name}."tabDesktop Icon" WHERE "standard"=1')[0][0]
+			)
+		else:
+
+			idx = (
+				frappe.db.sql("select max(idx) from `tabDesktop Icon` where owner=%s", frappe.session.user)[0][0]
+				or frappe.db.sql("select count(*) from `tabDesktop Icon` where standard=1")[0][0]
+			)
 
 		if not frappe.db.get_value("Report", _report):
 			_report = None
@@ -263,7 +270,10 @@ def set_desktop_icons(visible_list, ignore_duplicate=True):
 
 	# set standard as blocked and hidden if setting first active domain
 	if not frappe.flags.keep_desktop_icons:
-		frappe.db.sql("update `tabDesktop Icon` set blocked=0, hidden=1 where standard=1")
+		if frappe.is_oracledb:
+			frappe.db.sql(f'UPDATE {frappe.conf.db_name}."tabDesktop Icon" SET "blocked"=0, "hidden"=1 WHERE "standard"=1')
+		else:
+			frappe.db.sql("update `tabDesktop Icon` set blocked=0, hidden=1 where standard=1")
 
 	# set as visible if present, or add icon
 	for module_name in list(visible_list):
