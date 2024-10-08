@@ -29,7 +29,15 @@ def set_default(doc, key):
 	if not doc.is_default:
 		frappe.db.set(doc, "is_default", 1)
 
-	frappe.db.sql(
+	if frappe.is_oracledb:
+		frappe.db.sql(
+			f"""UPDATE {frappe.conf.db_name}."tab{doc.doctype}"
+			SET "is_default" = 0
+			WHERE "{key}" = {doc.get(key)} AND "name" != '{doc.name}'""",
+			[],
+		)
+	else:
+		frappe.db.sql(
 		"""update `tab{}` set `is_default`=0
 		where `{}`={} and name!={}""".format(doc.doctype, key, "%s", "%s"),
 		(doc.get(key), doc.name),

@@ -65,6 +65,14 @@ def sync_user_settings():
 				"postgres": """INSERT INTO `__UserSettings` (`user`, `doctype`, `data`)
 				VALUES (%s, %s, %s)
 				ON CONFLICT ("user", "doctype") DO UPDATE SET `data`=%s""",
+				"oracledb": f"""MERGE INTO {frappe.conf.db_name}."__UserSettings" us
+							USING (SELECT "{user}" user, "{doctype}" doctype, "{data}" data FROM dual) src
+							ON (us."user" = src."user" AND us."doctype" = src."doctype")
+							WHEN MATCHED THEN
+								UPDATE SET us."data" = '{data}'
+							WHEN NOT MATCHED THEN
+								INSERT ("user", "doctype", "data")
+								VALUES ('{user}', '{doctype}', '{data}')""",
 			},
 			(user, doctype, data, data),
 			as_dict=1,
@@ -104,7 +112,15 @@ def update_user_settings_data(
 						view_filter[filter_dict[fieldname]] = new
 						update = True
 		if update:
-			frappe.db.sql(
+			if frappe.is_oracledb:
+				frappe.db.sql(
+					f"""UPDATE {frappe.conf.db_name}."__UserSettings"
+					SET "data" = '{json.dumps(data)}'
+					WHERE "doctype" = '{user_setting.doctype}' AND "user" = '{user_setting.user}'""",
+					[],
+				)
+			else:
+				frappe.db.sql(
 				"update __UserSettings set data=%s where doctype=%s and user=%s",
 				(json.dumps(data), user_setting.doctype, user_setting.user),
 			)
