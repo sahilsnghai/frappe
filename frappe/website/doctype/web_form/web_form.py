@@ -312,7 +312,8 @@ def get_context(context):
 		)
 
 		if context.success_message:
-			context.success_message = frappe.db.escape(context.success_message.replace("\n", "<br>")).strip(
+			context.success_message = str(context.success_message)
+			context.success_message: str = frappe.db.escape(context.success_message.replace("\n", "<br>")).strip(
 				"'"
 			)
 

@@ -4,6 +4,8 @@
 import datetime
 import re
 
+from oracledb import LOB
+
 from dateutil.parser import ParserError
 
 import frappe
@@ -26,6 +28,9 @@ BLOCK_TAGS_PATTERN = re.compile(r"(<br|<div|<p)")
 def format_value(value, df=None, doc=None, currency=None, translated=False, format=None):
 	"""Format value based on given fieldtype, document reference, currency reference.
 	If docfield info (df) is not given, it will try and guess based on the datatype of the value"""
+	if isinstance(value, LOB):
+		value = str(value)
+
 	if isinstance(df, str):
 		df = frappe._dict(fieldtype=df)
 

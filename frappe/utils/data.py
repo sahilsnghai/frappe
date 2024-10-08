@@ -527,7 +527,8 @@ def get_time_str(timedelta_obj) -> str:
 def get_user_date_format() -> str:
 	"""Get the current user date format. The result will be cached."""
 	if getattr(frappe.local, "user_date_format", None) is None:
-		frappe.local.user_date_format = frappe.db.get_default("date_format")
+		f = frappe.db.get_default("date_format")
+		frappe.local.user_date_format = f and str(f)
 
 	return frappe.local.user_date_format or "yyyy-mm-dd"
 

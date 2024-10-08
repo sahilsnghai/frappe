@@ -119,6 +119,7 @@ def safe_exec(
 
 def safe_eval(code, eval_globals=None, eval_locals=None):
 	import unicodedata
+	code = str(code)
 
 	code = unicodedata.normalize("NFKC", code)
 

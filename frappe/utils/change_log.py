@@ -19,9 +19,11 @@ def get_change_log(user=None):
 	if not user:
 		user = frappe.session.user
 
-	last_known_versions = frappe._dict(
-		json.loads(frappe.db.get_value("User", user, "last_known_versions") or "{}")
-	)
+	value = frappe.db.get_value("User", user, "last_known_versions")
+
+	print(f"[[ get_change_log: {value}]]")
+
+	last_known_versions = frappe._dict(json.loads((value and str(value)) or "{}"))
 	current_versions = get_versions()
 
 	if not last_known_versions:

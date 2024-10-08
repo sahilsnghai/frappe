@@ -112,7 +112,8 @@ def validate_fields(data):
 	wildcard = update_wildcard_field_param(data)
 
 	for field in list(data.fields or []):
-		fieldname = extract_fieldnames(field)[0]
+		_fieldname = extract_fieldnames(field)
+		fieldname = _fieldname[0]
 		if not fieldname:
 			raise_invalid_field(fieldname)
 
@@ -203,9 +204,6 @@ def extract_fieldnames(field):
 		return [field]
 
 	columns = Parser(f"select {field} from _dummy").columns
-
-	if frappe.is_oracledb:
-		columns = Parser(f'select "{field}" from {frappe.conf.db_name}."_dummy"').columns
 
 	if not columns:
 		f = field.lower()

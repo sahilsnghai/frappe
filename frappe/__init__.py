@@ -1589,7 +1589,12 @@ def get_installed_apps(*, _ensure_on_bench=False) -> list[str]:
 	if not db:
 		connect()
 
-	installed = json.loads(db.get_global("installed_apps") or "[]")
+	_installed_apps = db.get_global("installed_apps")
+	if _installed_apps is not None and not isinstance(_installed_apps, str):
+		print(_installed_apps)
+		_installed_apps = str(_installed_apps)
+
+	installed = json.loads(_installed_apps or "[]")
 
 	if _ensure_on_bench:
 		all_apps = cache.get_value("all_apps", get_all_apps)
