@@ -32,7 +32,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-07 15:02:57.741367",
+ "modified": "2024-10-07 15:54:41.015679",
  "modified_by": "Administrator",
  "module": "LumenoreDemo",
  "name": "LumenoreNewDoctype",
@@ -53,5 +53,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

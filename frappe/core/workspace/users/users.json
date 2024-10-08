@@ -114,7 +114,7 @@
    "is_query_report": 0,
    "label": "User",
    "link_count": 0,
-   "link_to": "User",
+   "link_to": "LumenoreNewDoctype",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -150,7 +150,7 @@
    "type": "Link"
   }
  ],
- "modified": "2024-10-03 15:28:50.802223",
+ "modified": "2024-10-07 17:20:42.811576",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Users",
@@ -185,6 +185,12 @@
   {
    "label": "User Type",
    "link_to": "User Type",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "new",
+   "link_to": "About Us Settings",
    "type": "DocType"
   }
  ],

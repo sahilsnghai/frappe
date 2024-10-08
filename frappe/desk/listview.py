@@ -63,6 +63,16 @@ def get_group_by_count(doctype: str, current_filters: str, field: str) -> list[d
 	if not frappe.get_meta(doctype).has_field(field) and not is_default_field(field):
 		raise ValueError("Field does not belong to doctype")
 
+	if frappe.is_oracledb:
+		return frappe.get_list(
+			doctype,
+			filters=current_filters,
+			group_by=f'tab{doctype}."{field}"',
+			fields=["count(*) count", f'"{field}" name'],
+			order_by="count desc",
+			limit=50,
+		)
+
 	return frappe.get_list(
 		doctype,
 		filters=current_filters,

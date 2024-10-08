@@ -173,7 +173,7 @@ class Engine:
 			# apply implicit join if link field's field is referenced
 			self.query = dynamic_field.apply_join(self.query)
 			_field = dynamic_field.field
-		elif self.validate_filters and SPECIAL_CHAR_PATTERN.search(_field):
+		elif self.validate_filters and SPECIAL_CHAR_PATTERN.search(_field) and not (frappe.is_oracledb and re.search('\w+\."\w+"', _field)):
 			frappe.throw(_("Invalid filter: {0}").format(_field))
 		elif not doctype or doctype == self.doctype:
 			_field = self.table[field]

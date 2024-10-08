@@ -26,6 +26,8 @@ class FrappeField(Field):
 			# Need to add namespace if the table has an alias
 			if self.table and (with_namespace or self.table.alias) and self.table._table_name not in FrappeOracleQueryBuilder.IGNORE_TABLES_LIST:
 				table_name = self.table.get_table_name()
+				if re.search(rf'{table_name}\."\w+"', field_sql):
+					return field_sql
 				if field_sql[0] == '"' and field_sql[-1] == '"':
 					field_sql = f"{table_name}.{field_sql}"
 				else:
@@ -71,7 +73,6 @@ class FrappeTable(Table):
 		# # FIXME escape
 		# table_sql = format_quotes(self._table_name, quote_char)
 		table_sql = self._table_name
-
 		if self._schema is not None:
 			table_sql = f'{self._schema.get_sql(**kwargs).upper()}."{table_sql}"'
 
