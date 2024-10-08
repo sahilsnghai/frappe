@@ -446,7 +446,10 @@ def revert_series_if_last(key, name, doc=None):
 	current = (frappe.qb.from_(series).where(series.name == prefix).for_update().select("current")).run()
 
 	if current and current[0][0] == count:
-		frappe.db.sql("UPDATE `tabSeries` SET `current` = `current` - 1 WHERE `name`=%s", prefix)
+		if frappe.is_oracledb:
+			frappe.db.sql(f'UPDATE {frappe.conf.db_name}."tabSeries" SET "current" = "current" - 1 WHERE "name"= \'{prefix}\'', [])
+		else:
+			frappe.db.sql("UPDATE `tabSeries` SET `current` = `current` - 1 WHERE `name`=%s", prefix)
 
 
 def get_default_naming_series(doctype: str) -> str | None:
@@ -499,7 +502,15 @@ def append_number_if_name_exists(doctype, value, fieldname="name", separator="-"
 	regex = f"^{re.escape(value)}{separator}\\d+$"
 
 	if exists:
-		last = frappe.db.sql(
+		if frappe.is_oracledb:
+			last = frappe.db.sql(
+				f"""SELECT "{fieldname}" FROM {frappe.conf.db_name}."tab{doctype}"
+				WHERE REGEXP_LIKE("{fieldname}", '{regex}')
+				ORDER BY LENGTH("{fieldname}") DESC, "{fieldname}" DESC FETCH FIRST 1 ROWS ONLY""",
+				[]
+			)
+		else:
+			last = frappe.db.sql(
 			f"""SELECT `{fieldname}` FROM `tab{doctype}`
 			WHERE `{fieldname}` {frappe.db.REGEX_CHARACTER} %s
 			ORDER BY length({fieldname}) DESC,
