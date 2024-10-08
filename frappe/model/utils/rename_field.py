@@ -26,7 +26,16 @@ def rename_field(doctype, old_fieldname, new_fieldname, validate=True):
 
 	if new_field.fieldtype in table_fields:
 		# change parentfield of table mentioned in options
-		frappe.db.sql(
+		if frappe.is_oracledb:
+			frappe.db.sql(
+				f"""UPDATE {frappe.conf.db_name}."tab{new_field.options.split("\n", 1)[0]}"
+				SET "parentfield" = '{new_fieldname}'
+				WHERE "parentfield" = '{old_fieldname}'""",
+				[],
+			)
+
+		else:
+			frappe.db.sql(
 			"""update `tab{}` set parentfield={}
 			where parentfield={}""".format(new_field.options.split("\n", 1)[0], "%s", "%s"),
 			(new_fieldname, old_fieldname),
@@ -34,14 +43,25 @@ def rename_field(doctype, old_fieldname, new_fieldname, validate=True):
 
 	elif new_field.fieldtype not in no_value_fields:
 		if meta.issingle:
-			frappe.db.sql(
+			if frappe.is_oracledb:
+				frappe.db.sql(
+					f"""UPDATE {frappe.conf.db_name}."tabSingles"
+					SET "field" = '{new_fieldname}'
+					WHERE "doctype" = '{doctype}' AND "field" = '{old_fieldname}'""",
+					[],
+				)
+			else:
+				frappe.db.sql(
 				"""update `tabSingles` set field=%s
 				where doctype=%s and field=%s""",
 				(new_fieldname, doctype, old_fieldname),
 			)
 		else:
 			# copy field value
-			frappe.db.sql(f"""update `tab{doctype}` set `{new_fieldname}`=`{old_fieldname}`""")
+			if frappe.is_oracledb:
+				frappe.db.sql(f"""update {frappe.conf.db_name}."tab{doctype}" set "{new_fieldname}"='{old_fieldname}'""")
+			else:
+				frappe.db.sql(f"""update `tab{doctype}` set `{new_fieldname}`=`{old_fieldname}`""")
 
 		update_reports(doctype, old_fieldname, new_fieldname)
 		update_users_report_view_settings(doctype, old_fieldname, new_fieldname)
@@ -74,7 +94,18 @@ def update_reports(doctype, old_fieldname, new_fieldname):
 
 		return sort_by
 
-	reports = frappe.db.sql(
+	if frappe.is_oracledb:
+		reports = frappe.db.sql(
+			f"""SELECT "name", "ref_doctype", "json"
+			FROM {frappe.conf.db_name}."tabReport"
+			WHERE "report_type" = 'Report Builder'
+			AND NVL("is_standard", 'No') = 'No'
+			AND "json" LIKE %{old_fieldname}% AND "json" LIKE %{doctype}%""",
+			[],
+			as_dict=True,
+		)
+	else:
+		reports = frappe.db.sql(
 		"""select name, ref_doctype, json from tabReport
 		where report_type = 'Report Builder' and ifnull(is_standard, 'No') = 'No'
 		and json like %s and json like %s""",
@@ -121,7 +152,10 @@ def update_reports(doctype, old_fieldname, new_fieldname):
 				}
 			)
 
-			frappe.db.sql("""update `tabReport` set `json`=%s where name=%s""", (new_val, r.name))
+			if frappe.is_oracledb:
+				frappe.db.sql(f"""update {frappe.conf.db_name}."tabReport" set "json"='{new_val}' where "name"='{r.name}'""", (new_val, r.name))
+			else:
+				frappe.db.sql("""update `tabReport` set `json`=%s where name=%s""", (new_val, r.name))
 
 
 def update_users_report_view_settings(doctype, ref_fieldname, new_fieldname):
@@ -140,7 +174,14 @@ def update_users_report_view_settings(doctype, ref_fieldname, new_fieldname):
 				new_columns.append([field, field_doctype])
 
 		if columns_modified:
-			frappe.db.sql(
+			if frappe.is_oracledb:
+				frappe.db.sql(
+				f"""update {frappe.conf.db_name}."tabDefaultValue" set defvalue='{json.dumps(new_columns)}'
+				where defkey='{key}'""",
+				[],
+			)
+			else:
+				frappe.db.sql(
 				"""update `tabDefaultValue` set defvalue={}
 				where defkey={}""".format("%s", "%s"),
 				(json.dumps(new_columns), key),
@@ -148,24 +189,52 @@ def update_users_report_view_settings(doctype, ref_fieldname, new_fieldname):
 
 
 def update_property_setters(doctype, old_fieldname, new_fieldname):
-	frappe.db.sql(
-		"""update `tabProperty Setter` set field_name = %s
-		where doc_type=%s and field_name=%s""",
-		(new_fieldname, doctype, old_fieldname),
-	)
 
-	frappe.db.sql(
-		"""update `tabCustom Field` set insert_after=%s
-		where insert_after=%s and dt=%s""",
-		(new_fieldname, old_fieldname, doctype),
-	)
+	if frappe.is_oracledb:
+		frappe.db.sql(
+			f"""UPDATE {frappe.conf.db_name}."tabProperty Setter"
+			SET "field_name" = '{new_fieldname}'
+			WHERE "doc_type" = '{doctype}' AND "field_name" = '{old_fieldname}'""",
+			[],
+		)
+
+		frappe.db.sql(
+			f"""UPDATE {frappe.conf.db_name}."tabCustom Field"
+			SET "insert_after" = '{new_fieldname}'
+			WHERE "insert_after" = '{old_fieldname}' AND "dt" = '{doctype}'""",
+			[],
+		)
+
+	else:
+
+		frappe.db.sql(
+			"""update `tabProperty Setter` set field_name = %s
+			where doc_type=%s and field_name=%s""",
+			(new_fieldname, doctype, old_fieldname),
+		)
+
+		frappe.db.sql(
+			"""update `tabCustom Field` set insert_after=%s
+			where insert_after=%s and dt=%s""",
+			(new_fieldname, old_fieldname, doctype),
+		)
 
 
 def update_user_settings(doctype, old_fieldname, new_fieldname):
 	# store the user settings data from the redis to db
 	sync_user_settings()
 
-	user_settings = frappe.db.sql(
+
+	if frappe.is_oracledb:
+		user_settings = frappe.db.sql(
+			f'''SELECT "user", "doctype", "data"
+			FROM {frappe.conf.db_name}."__UserSettings"
+			WHERE "doctype" = '{doctype}' AND "data" LIKE %{old_fieldname}% ''',
+			[],
+			as_dict=True,
+		)
+	else:
+		user_settings = frappe.db.sql(
 		''' select user, doctype, data from `__UserSettings`
 		where doctype=%s and data like "%%%s%%"''',
 		(doctype, old_fieldname),

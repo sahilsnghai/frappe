@@ -430,7 +430,19 @@ def clear_references(
 	reference_doctype_field="reference_doctype",
 	reference_name_field="reference_name",
 ):
-	frappe.db.sql(
+	if frappe.is_oracledb:
+		frappe.db.sql(
+			f"""UPDATE
+				{frappe.conf.db_name}."tab{doctype}"
+			SET
+				"{reference_doctype_field}" = NULL, "{reference_name_field}" = NULL
+			WHERE
+				"{reference_doctype_field}" = '{reference_doctype}' AND "{reference_name_field}" = '{reference_name}'""",  # nosec
+			[],
+		)
+	else:
+
+		frappe.db.sql(
 		f"""update
 			`tab{doctype}`
 		set
@@ -438,7 +450,7 @@ def clear_references(
 		where
 			{reference_doctype_field}=%s and {reference_name_field}=%s""",  # nosec
 		(reference_doctype, reference_name),
-	)
+		)
 
 
 def clear_timeline_references(link_doctype, link_name):
