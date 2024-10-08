@@ -185,7 +185,10 @@ def get_notification_info():
 	can_read = frappe.get_user().get_can_read()
 	conditions = {}
 	module_doctypes = {}
-	doctype_info = dict(frappe.db.sql("""select name, module from tabDocType"""))
+	if frappe.is_oracledb:
+		doctype_info = dict(frappe.db.sql(f"""select "name", "module" from {frappe.conf.db_name}."tabDocType" """))
+	else:
+		doctype_info = dict(frappe.db.sql("""select name, module from tabDocType"""))
 
 	for d in list(set(can_read + list(config.for_doctype))):
 		if d in config.for_doctype:

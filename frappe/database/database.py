@@ -278,8 +278,8 @@ class Database:
 				print(f"[Query]: {sqlparse.format(query, indent=4)}")
 				self._cursor.execute(query)
 		except Exception as e:
-			raise Exception(f'{e}: query: \n{query}\n')
-			inspect.print_exc(file=sys.stdout)
+			# raise Exception(f'{e}: query: \n{query}\n')
+			# inspect.print_exc(file=sys.stdout)
 
 			if self.is_duplicate_entry(e):
 				return ()

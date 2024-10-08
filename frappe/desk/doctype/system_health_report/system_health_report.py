@@ -190,7 +190,27 @@ class SystemHealthReport(Document):
 		# Exclude "maybe" curently executing job
 		upper_threshold = add_to_date(None, minutes=-30, as_datetime=True)
 		self.scheduler_status = get_scheduler_status().get("status")
-		failing_jobs = frappe.db.sql(
+		if frappe.is_oracledb:
+			failing_jobs = frappe.db.sql(
+				f"""
+				SELECT "scheduled_job_type",
+					AVG(CASE WHEN "status" != 'Complete' THEN 1 ELSE 0 END) * 100 AS failure_rate
+				FROM {frappe.conf.db_name}."tabScheduled Job Log"
+				WHERE
+					"creation" > {lower_threshold}
+					AND "modified" > {lower_threshold}
+					AND "creation" < {upper_threshold}
+				GROUP BY "scheduled_job_type"
+				HAVING failure_rate > 0
+				ORDER BY failure_rate DESC
+				OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY
+				""",
+				[],
+				as_dict=True,
+			)
+		else:
+
+			failing_jobs = frappe.db.sql(
 			"""
 			select scheduled_job_type,
 				   avg(CASE WHEN status != 'Complete' THEN 1 ELSE 0 END) * 100 as failure_rate
@@ -241,7 +261,21 @@ class SystemHealthReport(Document):
 		filters = {"creation": (">", threshold), "modified": (">", threshold)}
 		self.total_errors = frappe.db.count("Error Log", filters)
 
-		top_errors = frappe.db.sql(
+		if frappe.is_oracledb:
+			top_errors = frappe.db.sql(
+				f"""
+				SELECT "method" title, COUNT(*) occurrences
+				FROM {frappe.conf.db_name}."tabError Log"
+				WHERE "modified" > {threshold} AND "creation" > {threshold}
+				GROUP BY "method"
+				ORDER BY occurrences DESC
+				OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY
+				""",
+				[],
+				as_dict=True,
+			)
+		else:
+			top_errors = frappe.db.sql(
 			"""select method as title, count(*) as occurrences
 			from `tabError Log`
 			where modified > %(threshold)s and creation > %(threshold)s
@@ -270,6 +304,11 @@ class SystemHealthReport(Document):
 		if frappe.db.db_type == "mariadb":
 			self.bufferpool_size = frappe.db.sql("show variables like 'innodb_buffer_pool_size'")[0][1]
 			self.binary_logging = frappe.db.sql("show variables like 'log_bin'")[0][1]
+
+		if frappe.db.db_type == "oracle":
+			self.database_version = frappe.db.sql("SELECT * FROM v$version")[0][0]
+			self.bufferpool_size = frappe.db.sql("SELECT value FROM v$parameter WHERE name = 'pga_aggregate_target'")[0][0]
+			self.binary_logging = frappe.db.sql("SELECT value FROM v$parameter WHERE name = 'log_archive_dest'")[0][0]
 
 	@health_check("Cache")
 	def fetch_cache_details(self):
