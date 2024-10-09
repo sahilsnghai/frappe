@@ -42,6 +42,7 @@ class CustomizeForm(Document):
 		allow_auto_repeat: DF.Check
 		allow_copy: DF.Check
 		allow_import: DF.Check
+		autocomplete_cwho: DF.Autocomplete | None
 		autoname: DF.Data | None
 		default_email_template: DF.Link | None
 		default_print_format: DF.Link | None
@@ -59,16 +60,7 @@ class CustomizeForm(Document):
 		links: DF.Table[DocTypeLink]
 		make_attachments_public: DF.Check
 		max_attachments: DF.Int
-		naming_rule: DF.Literal[
-			"",
-			"Set by user",
-			"By fieldname",
-			'By "Naming Series" field',
-			"Expression",
-			"Expression (old style)",
-			"Random",
-			"By script",
-		]
+		naming_rule: DF.Literal["", "Set by user", "By fieldname", "By \"Naming Series\" field", "Expression", "Expression (old style)", "Random", "By script"]
 		queue_in_background: DF.Check
 		quick_entry: DF.Check
 		search_fields: DF.Data | None

@@ -77,6 +77,7 @@ class OracleDBExceptionUtil:
 	InternalError = oracledb.InternalError
 	DataError = oracledb.DataError
 	InterfaceError = oracledb.InterfaceError
+	SQLError = oracledb.ProgrammingError
 
 	@staticmethod
 	def is_deadlocked(e: oracledb.Error) -> bool:

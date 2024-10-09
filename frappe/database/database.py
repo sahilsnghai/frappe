@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 	from pymysql.cursors import Cursor as MariadbCursor
 	from oracledb.connection import Connection as OracleDBConnection
 	from oracledb.cursor import Cursor as OracleDBCursor
+from oracledb import LOB
 
 
 IFNULL_PATTERN = re.compile(r"ifnull\(", flags=re.IGNORECASE)
@@ -178,8 +179,13 @@ class Database:
 	def _transform_query(self, query: Query, values: QueryValues) -> tuple:
 		return query, values
 
-	def _transform_result(self, result: list[tuple]) -> list[tuple]:
-		return result
+	def _transform_result(self, result: list[tuple]) -> list[list]:
+		return [
+			[
+				str(i) if isinstance(i, LOB) else i
+				for i in row
+			] for row in result
+		]
 
 	def _clean_up(self):
 		pass
@@ -278,8 +284,8 @@ class Database:
 				print(f"[Query]: {sqlparse.format(query, indent=4)}")
 				self._cursor.execute(query)
 		except Exception as e:
-			# raise Exception(f'{e}: query: \n{query}\n')
-			# inspect.print_exc(file=sys.stdout)
+			raise Exception(f'{e}: query: \n{query}\n')
+			inspect.print_exc(file=sys.stdout)
 
 			if self.is_duplicate_entry(e):
 				return ()

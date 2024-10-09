@@ -40,11 +40,19 @@ class Blogger(Document):
 		clear_blog_cache()
 
 		if self.user:
-			for blog in frappe.db.sql_list(
-				"""select name from `tabBlog Post` where owner=%s
+			if frappe.is_oracledb:
+				_iter = frappe.db.sql_list(
+				f"""select name from {frappe.conf.db_name}."tabBlog Post" where owner='{self.user}'
 				and ifnull(blogger,'')=''""",
-				self.user,
-			):
+				[],
+				)
+			else:
+				_iter = frappe.db.sql_list(
+					"""select name from `tabBlog Post` where owner=%s
+					and ifnull(blogger,'')=''""",
+					self.user,
+				)
+			for blog in _iter:
 				b = frappe.get_doc("Blog Post", blog)
 				b.blogger = self.name
 				b.save()

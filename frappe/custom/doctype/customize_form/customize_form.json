@@ -61,7 +61,8 @@
   "fields_section_break",
   "fields",
   "form_tab",
-  "form_builder"
+  "form_builder",
+  "autocomplete_cwho"
  ],
  "fields": [
   {
@@ -399,6 +400,10 @@
    "fieldname": "sender_name_field",
    "fieldtype": "Data",
    "label": "Sender Name Field"
+  },
+  {
+   "fieldname": "autocomplete_cwho",
+   "fieldtype": "Autocomplete"
   }
  ],
  "hide_toolbar": 1,
@@ -407,7 +412,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-12-01 18:18:23.086134",
+ "modified": "2024-10-08 17:41:21.699905",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form",

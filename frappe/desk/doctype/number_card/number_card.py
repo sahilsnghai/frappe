@@ -154,6 +154,7 @@ def get_result(doc, filters, to_date=None):
 	res = frappe.get_list(
 		doc.document_type, fields=fields, filters=filters, parent_doctype=doc.parent_document_type
 	)
+	print(f"NUMBER CARDS: [[{res=}]]")
 	number = res[0]["result"] if res else 0
 
 	return flt(number)

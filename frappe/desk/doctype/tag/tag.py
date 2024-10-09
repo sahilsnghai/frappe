@@ -82,7 +82,7 @@ class DocTags:
 
 	def get_tags(self, dn):
 		"""returns tag for a particular item"""
-		return (frappe.db.get_value(self.dt, dn, "_user_tags", ignore=1) or "").strip()
+		return (str(frappe.db.get_value(self.dt, dn, "_user_tags", ignore=1)) or "").strip()
 
 	def add(self, dn, tag):
 		"""add a new user tag"""

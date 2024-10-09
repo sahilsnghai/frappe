@@ -29,7 +29,7 @@ def get(args=None):
 
 	return frappe.get_all(
 		"ToDo",
-		fields=["allocated_to as owner", "name"],
+		fields=['"allocated_to" owner' if frappe.is_oracledb else "allocated_to as owner", "name"],
 		filters={
 			"reference_type": args.get("doctype"),
 			"reference_name": args.get("name"),
