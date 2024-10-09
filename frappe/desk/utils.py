@@ -53,9 +53,9 @@ def convert_fields(fields: dict):
 						convert_mariadb_to_orcaledb(order_by_clause)
 					)
 			fields["order_by"] = ", ".join(order_by)
-
-
-			# fields["order_by"] = f"{convert_mariadb_to_orcaledb(string=string[0])} {string[1]}"
+		if fields.get("group_by"):
+			fields["group_by"] = ", ".join([convert_mariadb_to_orcaledb(group_by_clause)
+											for group_by_clause in fields.get("group_by").split(',')])
 
 
 def validate_route_conflict(doctype, name):

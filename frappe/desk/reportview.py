@@ -73,7 +73,7 @@ def get_count() -> int:
 			partial_query = execute(**args, run=0)
 			count = frappe.db.sql(f"""select count(*) from ( {partial_query} ) p""")[0][0]
 		else:
-			args.fields = [f"count({fieldname}) total_count" if frappe.is_oracledb else f"count({fieldname}) as total_count"]
+			args.fields = [f"count({fieldname}) \"total_count\"" if frappe.is_oracledb else f"count({fieldname}) as total_count"]
 			count = execute(**args)[0].get("total_count")
 
 	return count

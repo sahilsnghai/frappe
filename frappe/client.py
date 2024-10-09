@@ -92,7 +92,10 @@ def get(doctype, name=None, filters=None, parent=None):
 	doc.check_permission()
 	doc.apply_fieldlevel_read_permissions()
 
-	return doc.as_dict()
+	ret = doc.as_dict()
+	print(f"====>> {ret}")
+
+	return ret
 
 
 @frappe.whitelist()
