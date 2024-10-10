@@ -22,14 +22,14 @@ from frappe.utils import CallbackManager
 	"--db-type",
 	default="oracledb",
 	type=click.Choice(["mariadb", "postgres", "oracledb"]),
-	help='Optional "postgres" or "mariadb". Default is "mariadb"',
+	help='Optional "oracledb" or "postgres" or "mariadb". Default is "oracledb"',
 )
 @click.option("--db-host", help="Database Host")
 @click.option("--db-port", type=int, help="Database Port")
 @click.option(
 	"--db-root-username",
 	"--mariadb-root-username",
-	help='Root username for MariaDB or PostgreSQL, Default is "root"',
+	help='Root username for OracleDB or MariaDB or PostgreSQL, Default is "root"',
 )
 @click.option(
 	"--db-root-service-name",

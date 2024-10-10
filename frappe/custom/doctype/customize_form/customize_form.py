@@ -166,13 +166,13 @@ class CustomizeForm(Document):
 
 	def get_name_translation(self):
 		"""Get translation object if exists of current doctype name in the default language"""
-		if frappe.is_oracledb:
-			return frappe.get_value(
-				"Translation",
-				{"DBMS_LOB.SUBSTR(tabTranslation.\"source_text\", 4000, 1)": self.doc_type, "language": frappe.local.lang or "en"},
-				["name", "translated_text"],
-				as_dict=True,
-			)
+		# if frappe.is_oracledb:
+		# 	return frappe.get_value(
+		# 		"Translation",
+		# 		{"DBMS_LOB.SUBSTR(tabTranslation.\"source_text\", 4000, 1)": self.doc_type, "language": frappe.local.lang or "en"},
+		# 		["name", "translated_text"],
+		# 		as_dict=True,
+		# 	)
 		return frappe.get_value(
 			"Translation",
 			{"source_text": self.doc_type, "language": frappe.local.lang or "en"},

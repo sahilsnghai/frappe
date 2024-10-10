@@ -24,7 +24,7 @@ def execute(filters=None):
 		data = list(data)
 		for i, doc in enumerate(data):
 			permission = frappe.permissions.get_doc_permissions(frappe.get_doc(doctype, doc[0]), user)
-			data[i] = doc + tuple(permission.get(right) for right in rights)
+			data[i] = doc + [permission.get(right) for right in rights]
 
 	return columns, data
 
@@ -34,7 +34,10 @@ def get_columns_and_fields(doctype):
 	fields = ["name"]
 	for df in frappe.get_meta(doctype).fields:
 		if df.in_list_view and df.fieldtype in data_fieldtypes:
-			fields.append(f"`{df.fieldname}`")
+			if frappe.is_oracledb:
+				fields.append(f'"{df.fieldname}"')
+			else:
+				fields.append(f"`{df.fieldname}`")
 			fieldtype = f"Link/{df.options}" if df.fieldtype == "Link" else df.fieldtype
 			columns.append(f"{df.label}:{fieldtype}:{df.width or 100}")
 

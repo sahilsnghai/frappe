@@ -21,6 +21,7 @@ STANDARD_FIELD_CONVERSION_MAP = {
 	"_assign": "Text",
 	"docstatus": "Int",
 }
+
 INCLUDE_DIRECTIVE_PATTERN = re.compile(r"""{% include\s['"](.*)['"]\s%}""")
 
 

@@ -397,6 +397,13 @@ def get_report_module_dotted_path(module, report_name):
 
 
 def get_group_by_field(args, doctype):
+	if frappe.is_oracledb:
+		if args["aggregate_function"] == "count":
+			group_by_field = "count(*) _aggregate_column"
+		else:
+			group_by_field = f"{args.aggregate_function}({args.aggregate_on}) _aggregate_column"
+		return group_by_field
+
 	if args["aggregate_function"] == "count":
 		group_by_field = "count(*) as _aggregate_column"
 	else:

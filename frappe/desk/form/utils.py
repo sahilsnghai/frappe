@@ -87,11 +87,16 @@ def get_next(doctype, value, prev, filters=None, sort_order="desc", sort_field="
 	# # add condition for next or prev item
 	filters.append([doctype, sort_field, condition, frappe.get_value(doctype, value, sort_field)])
 
+	if frappe.is_oracledb:
+		_order_by = f'tab{doctype}."{sort_field}"' + " " + sort_order
+	else:
+		_order_by = f"`tab{doctype}`.{sort_field}" + " " + sort_order
+
 	res = frappe.get_list(
 		doctype,
 		fields=["name"],
 		filters=filters,
-		order_by=f"`tab{doctype}`.{sort_field}" + " " + sort_order,
+		order_by=_order_by,
 		limit_start=0,
 		limit_page_length=1,
 		as_list=True,

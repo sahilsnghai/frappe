@@ -994,7 +994,17 @@ class DatabaseQuery:
 		):
 			if f.operator.lower() == "like" and frappe.conf.get("db_type") == "postgres":
 				f.operator = "ilike"
-			condition = f"{column_name} {f.operator} {value}"
+
+			if df := meta.get("fields", {"fieldname": f.fieldname}):
+				df = df[0]
+				if frappe.is_oracledb and df.fieldtype in ('Code', 'Text Editor', 'Markdown Editor',
+														   'HTML Editor', 'Text'):
+					condition = f"DBMS_LOB.SUBSTR({column_name}, 4000, 1) {f.operator} {value}"
+				else:
+					condition = f"{column_name} {f.operator} {value}"
+			else:
+				condition = f"{column_name} {f.operator} {value}"
+
 		else:
 			condition = f"ifnull({column_name}, {fallback}) {f.operator} {value}"
 
@@ -1236,6 +1246,8 @@ class DatabaseQuery:
 
 			if full_field_name:
 				tbl = field.split(".", 1)[0]
+				if frappe.is_oracledb and tbl.startswith('`'):
+					tbl = tbl[1:-1]
 				if tbl not in self.tables:
 					if tbl.startswith("`"):
 						tbl = tbl[4:-1]

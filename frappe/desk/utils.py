@@ -6,7 +6,7 @@ import re
 import frappe
 
 
-def convert_mariadb_to_orcaledb(string):
+def convert_mariadb_to_orcaledb(string, check_alias: bool = False):
 	if not frappe.is_oracledb:
 		return string
 	pattern = '`(?P<alias>\w+( \w+)*)`.`?(?P<column>\w+)`?'
@@ -16,6 +16,14 @@ def convert_mariadb_to_orcaledb(string):
 		template = '{alias}."{column}"'.format(alias=alias.replace(' ', '_'), column=column)
 		string = string.replace(string[_match.start():_match.end()], template)
 		is_replace = True
+
+	# Check alias name with underscore (_) symbol
+	if check_alias:
+		pattern = ' (?P<alias_name>_\w+)$'
+		if _match := re.search(pattern=pattern, string=string):
+			alias_name = list(_match.groupdict().values())[0]
+			string = string.replace(alias_name, '"' + alias_name + '"')
+
 	if is_replace:
 		return string
 
@@ -28,30 +36,44 @@ def convert_mariadb_to_orcaledb(string):
 
 def convert_list(fields: list):
 	return [
-		convert_mariadb_to_orcaledb(string=string)
+		convert_mariadb_to_orcaledb(string=string, check_alias=True)
 		for string in fields
 	]
+
+def convert_order_by(order_by_clause, fields):
+	def check_is_alias(column_name):
+		return not column_name.startswith("_") and any(col.endswith(column_name)
+													   for col in fields['fields'])
+
+	if re.search(' asc$', order_by_clause, re.IGNORECASE):
+		col = order_by_clause[:-4]
+		if check_is_alias(' ' + col):
+			order_by = col + ' asc'
+		else:
+			order_by = convert_mariadb_to_orcaledb(col) + ' asc'
+	elif re.search(' desc$', order_by_clause, re.IGNORECASE):
+		col = order_by_clause[:-5]
+		if check_is_alias(' ' + col):
+			order_by = col + ' desc'
+		else:
+			order_by = convert_mariadb_to_orcaledb(col) + ' desc'
+	else:
+		if check_is_alias(' ' + order_by_clause):
+			order_by = order_by_clause
+		else:
+			order_by = convert_mariadb_to_orcaledb(order_by_clause)
+	return order_by
+
 
 def convert_fields(fields: dict):
 	fields['fields'] = convert_list(fields['fields'])
 
+
 	if frappe.is_oracledb:
 		if fields.get("order_by"):
 			# if multiple orderby pass.
-			order_by = []
-			for order_by_clause in fields.get("order_by").split(","):
-				if re.search(' asc$', order_by_clause, re.IGNORECASE):
-					order_by.append(
-						convert_mariadb_to_orcaledb(order_by_clause[:-4]) + ' asc'
-					)
-				elif re.search(' desc$', order_by_clause, re.IGNORECASE):
-					order_by.append(
-						convert_mariadb_to_orcaledb(order_by_clause[:-5]) + ' desc'
-					)
-				else:
-					order_by.append(
-						convert_mariadb_to_orcaledb(order_by_clause)
-					)
+			order_by = [convert_order_by(order_by_clause, fields)
+						for order_by_clause in fields.get("order_by").split(",")]
 			fields["order_by"] = ", ".join(order_by)
 		if fields.get("group_by"):
 			fields["group_by"] = ", ".join([convert_mariadb_to_orcaledb(group_by_clause)
