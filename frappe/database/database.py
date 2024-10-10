@@ -276,11 +276,9 @@ class Database:
 			if values:
 				self._cursor.execute(query, values)
 			else:
-				# if '%%all%%' in query:
-				# 	raise NotImplementedError()
-					# frame_printer()
-				if '`tabDashboard_Settings`.name = \'Administrator\'' in query:
+				if 'in' in query and 'NULL' in query:
 					pass
+				query = re.sub("!= NULL", "is not NULL", query)
 				print(f"[Query]: {sqlparse.format(query, indent=4)}")
 				self._cursor.execute(query)
 		except Exception as e:

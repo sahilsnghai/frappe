@@ -337,6 +337,8 @@ class DatabaseQuery:
 
 		self.validate_order_by_and_group_by(args.order_by)
 		if frappe.is_oracledb:
+			if args.order_by and re.search('^"?_user_tags"?', args.order_by):
+				args.order_by = "DBMS_LOB.SUBSTR(tabRole.\"_user_tags\", 4000, 1)"
 			args.order_by = args.order_by and (" order by " + args.order_by) or ""
 		else:
 			args.order_by = args.order_by and (" order by " + args.order_by) or ""
@@ -349,6 +351,8 @@ class DatabaseQuery:
 					_group_by.append(i)
 				elif re.match('^["\'`]\w+["\'`]$', i):
 					_group_by.append('"{}"'.format(i[1:-1]))
+				elif i == '_user_tags':
+					_group_by.append('DBMS_LOB.SUBSTR("_user_tags", 4000, 1)')
 				else:
 					_group_by.append(f'"{i}"')
 
@@ -608,6 +612,8 @@ class DatabaseQuery:
 	def cast_name_fields(self):
 		for i, field in enumerate(self.fields):
 			if field is not None:
+				if field == '_user_tags':
+					field = 'DBMS_LOB.SUBSTR(tabRole."_user_tags", 4000, 1) as "_user_tags"'
 				self.fields[i] = cast_name(field)
 
 	def get_table_columns(self):
@@ -799,6 +805,8 @@ class DatabaseQuery:
 			column_name = cast_name(
 				f.fieldname if "ifnull(" in f.fieldname
 				else f'{tname.replace(" ", "_")}."{f.fieldname}"')
+			if f.fieldname == '_user_tags':
+				column_name = f'DBMS_LOB.SUBSTR({column_name}, 4000, 1)'
 		else:
 			column_name = cast_name(
 				f.fieldname if "ifnull(" in f.fieldname else f"{tname}.`{f.fieldname}`"
@@ -873,7 +881,7 @@ class DatabaseQuery:
 				values = values.split(",")
 
 			fallback = "''"
-			value = [frappe.db.escape((cstr(v) or "").strip(), percent=False) for v in values]
+			value = [(cstr(v) and frappe.db.escape(cstr(v).strip(), percent=False) or "''") for v in values]
 			if len(value):
 				value = f"({', '.join(value)})"
 			else:

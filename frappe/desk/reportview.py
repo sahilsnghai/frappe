@@ -636,7 +636,8 @@ def get_stats(stats, doctype, filters=None):
 				no_tag_count = frappe.get_list(
 					doctype,
 					fields=[column, "count(*)"],
-					filters=[*filters, [column, "in", ("", ",")]],
+					filters=[*filters],
+					or_filters=[[column, "=", ","], [column, "=", ""]],
 					as_list=True,
 					group_by=column,
 					order_by=column,
