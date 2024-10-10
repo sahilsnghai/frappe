@@ -338,7 +338,7 @@ class DatabaseQuery:
 		self.validate_order_by_and_group_by(args.order_by)
 		if frappe.is_oracledb:
 			if args.order_by and re.search('^"?_user_tags"?', args.order_by):
-				args.order_by = "DBMS_LOB.SUBSTR(tabRole.\"_user_tags\", 4000, 1)"
+				args.order_by = "DBMS_LOB.SUBSTR(\"_user_tags\", 4000, 1)"
 			args.order_by = args.order_by and (" order by " + args.order_by) or ""
 		else:
 			args.order_by = args.order_by and (" order by " + args.order_by) or ""
@@ -613,7 +613,7 @@ class DatabaseQuery:
 		for i, field in enumerate(self.fields):
 			if field is not None:
 				if field == '_user_tags':
-					field = 'DBMS_LOB.SUBSTR(tabRole."_user_tags", 4000, 1) as "_user_tags"'
+					field = 'DBMS_LOB.SUBSTR("_user_tags", 4000, 1) as "_user_tags"'
 				self.fields[i] = cast_name(field)
 
 	def get_table_columns(self):
