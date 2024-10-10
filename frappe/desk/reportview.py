@@ -385,6 +385,7 @@ def export_query():
 	)
 
 	db_query = DatabaseQuery(doctype)
+	convert_fields(form_params)
 	ret = db_query.execute(**form_params)
 
 	if add_totals_row:
@@ -525,10 +526,14 @@ def parse_field(field: str) -> tuple[str | None, str]:
 	if key.startswith(("count(", "sum(", "avg(")):
 		raise ValueError
 
+
 	if "." in key:
 		table, column = key.split(".", 2)[:2]
+		if frappe.is_oracledb:
+			return table[3:], column.strip('"')
 		return table[4:-1], column.strip("`")
-
+	if frappe.is_oracledb:
+		return None, key.strip('"')
 	return None, key.strip("`")
 
 

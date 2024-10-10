@@ -552,17 +552,28 @@ class BaseDocument:
 			ignore_virtual=True,
 		)
 
-		if frappe.is_oracledb:
-			match self.doctype:
-				case 'Version':
-					d['data'] = to_clob_oracle(data=d['data'], chunks=1000)
-				case 'Error Log':
-					d['error'] = to_clob_oracle(data=d['error'], chunks=1000)
+		# if frappe.is_oracledb:
+		# 	match self.doctype:
+		# 		case 'Version':
+		# 			d['data'] = to_clob_oracle(data=d['data'], chunks=1000)
+		# 		case 'Error Log':
+		# 			d['error'] = to_clob_oracle(data=d['error'], chunks=1000)
 
 		columns = list(d)
 		try:
 			if frappe.conf.db_type == 'oracledb':
-				_values = [conversion_column_value(d_value) for d_value in d.values()]
+
+				meta = frappe.get_meta(self.doctype)
+
+				_values = []
+				for d_columns, d_value in d.items():
+					d_value = conversion_column_value(d_value)
+					if (metadata_cols := meta.get_field(d_columns)) \
+										and metadata_cols.fieldtype in ('Code', 'Text Editor',
+																		'Markdown Editor',
+																		'HTML Editor', 'Text'):
+						d_value = to_clob_oracle(data=d_value, chunks=3000)
+					_values.append(d_value)
 
 				# TODO: handle conflict
 				frappe.db.sql(

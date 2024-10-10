@@ -539,7 +539,7 @@ def _get_linked_doctypes(doctype, without_ignore_user_permissions_enabled=False)
 	if without_ignore_user_permissions_enabled:
 		filters.append(["ignore_user_permissions", "!=", 1])
 	# find links of parents
-	links = frappe.get_all("DocField", fields=["parent as dt"], filters=filters)
+	links = frappe.get_all("DocField", fields=['"parent" dt' if frappe.is_oracledb else "parent as dt"], filters=filters)
 	links += frappe.get_all("Custom Field", fields=["dt"], filters=filters)
 
 	for (dt,) in links:

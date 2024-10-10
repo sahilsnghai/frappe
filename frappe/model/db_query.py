@@ -732,9 +732,8 @@ class DatabaseQuery:
 
 			# handle child / joined table fields
 			elif "." in field:
-				if frappe.is_oracledb:
-					if column_search := re.search('(?P<table>\w+)\."(?P<column>\w+)"', field):
-						table, column = column_search["table"], column_search["column"]
+				if frappe.is_oracledb and (column_search := re.search('(?P<table>\w+)\."(?P<column>\w+)"', field)):
+					table, column = column_search["table"], column_search["column"]
 				else:
 					table, column = column.split(".", 1)
 				ch_doctype = table

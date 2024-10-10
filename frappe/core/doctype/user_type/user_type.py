@@ -231,15 +231,26 @@ def get_user_linked_doctypes(doctype, txt, searchfield, start, page_len, filters
 		["DocType", "name", "like", f"%{txt}%"],
 	]
 
-	doctypes = frappe.get_all(
-		"DocType",
-		fields=["`tabDocType`.`name`"],
-		filters=filters,
-		order_by="`tabDocType`.`idx` desc",
-		limit_start=start,
-		limit_page_length=page_len,
-		as_list=1,
-	)
+	if frappe.is_oracledb:
+		doctypes = frappe.get_all(
+			"DocType",
+			fields=['tabDocType."name"'],
+			filters=filters,
+			order_by='tabDocType."idx" desc',
+			limit_start=start,
+			limit_page_length=page_len,
+			as_list=1,
+		)
+	else:
+		doctypes = frappe.get_all(
+			"DocType",
+			fields=["`tabDocType`.`name`"],
+			filters=filters,
+			order_by="`tabDocType`.`idx` desc",
+			limit_start=start,
+			limit_page_length=page_len,
+			as_list=1,
+		)
 
 	custom_dt_filters = [
 		["Custom Field", "dt", "like", f"%{txt}%"],
@@ -248,7 +259,7 @@ def get_user_linked_doctypes(doctype, txt, searchfield, start, page_len, filters
 	]
 
 	custom_doctypes = frappe.get_all(
-		"Custom Field", fields=["dt as name"], filters=custom_dt_filters, as_list=1
+		"Custom Field", fields=['"dt" name'], filters=custom_dt_filters, as_list=1
 	)
 
 	return doctypes + custom_doctypes
@@ -256,14 +267,24 @@ def get_user_linked_doctypes(doctype, txt, searchfield, start, page_len, filters
 
 @frappe.whitelist()
 def get_user_id(parent):
-	data = (
-		frappe.get_all(
-			"DocField",
-			fields=["label", "fieldname as value"],
-			filters={"options": "User", "fieldtype": "Link", "parent": parent},
+	if frappe.is_oracledb:
+		data = (
+			frappe.get_all(
+				"DocField",
+				fields=["label", '"fieldname" value'],
+				filters={"options": "User", "fieldtype": "Link", "parent": parent},
+			)
+			or []
 		)
-		or []
-	)
+	else:
+		data = (
+			frappe.get_all(
+				"DocField",
+				fields=["label", "fieldname as value"],
+				filters={"options": "User", "fieldtype": "Link", "parent": parent},
+			)
+			or []
+		)
 
 	data.extend(
 		frappe.get_all(

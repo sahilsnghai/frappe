@@ -28,7 +28,7 @@ def get_attached_images(doctype: str, names: list[str] | str) -> frappe._dict:
 			"attached_to_name": ("in", names),
 			"is_folder": 0,
 		},
-		fields=["file_url", "attached_to_name as docname"],
+		fields=["file_url", '"attached_to_name" docname' if frappe.is_oracledb else "attached_to_name as docname"],
 	)
 
 	out = frappe._dict()
