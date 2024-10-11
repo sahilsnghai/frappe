@@ -471,12 +471,12 @@ def last_sequence_id(doc):
 		"Workspace",
 		fields=["sequence_id"],
 		filters={"public": doc.public, "for_user": doc.for_user},
-		order_by="sequence_id desc",
+		order_by='"sequence_id" desc' if frappe.is_oracledb else "sequence_id desc",
 	)[0].sequence_id
 
 
 def get_page_list(fields, filters):
-	return frappe.get_all("Workspace", fields=fields, filters=filters, order_by="sequence_id asc")
+	return frappe.get_all("Workspace", fields=fields, filters=filters, order_by='"sequence_id" asc' if frappe.is_oracledb else "sequence_id asc")
 
 
 def is_workspace_manager():

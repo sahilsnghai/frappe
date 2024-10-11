@@ -243,6 +243,8 @@ def get_heatmap_chart_config(chart, filters, heatmap_year):
 
 	if frappe.db.db_type == "mariadb":
 		timestamp_field = f"unix_timestamp({datefield})"
+	elif frappe.is_oracledb:
+		timestamp_field = f'extract(epoch from timestamp "{datefield}")'
 	else:
 		timestamp_field = f"extract(epoch from timestamp {datefield})"
 
@@ -254,9 +256,9 @@ def get_heatmap_chart_config(chart, filters, heatmap_year):
 				f"{aggregate_function}({value_field})",
 			],
 			filters=filters,
-			group_by=f"date({datefield})",
+			group_by=f'date("{datefield}")' if frappe.is_oracledb else f"date({datefield})",
 			as_list=1,
-			order_by=f"{datefield} asc",
+			order_by=f'"{datefield}" asc',
 			ignore_ifnull=True,
 		)
 	)
@@ -273,11 +275,16 @@ def get_group_by_chart_config(chart, filters) -> dict | None:
 	group_by_field = chart.group_by_based_on
 	doctype = chart.document_type
 
+	if group_by_field[0] == '`' and group_by_field[-1] == '`':
+		group_by_field = group_by_field[1:-1]
+	if value_field not in ("1", "*") and value_field[0] == '`' and value_field[-1] == '`':
+		value_field = f'"{value_field[1:-1]}"'
+
 	data = frappe.get_list(
 		doctype,
 		fields=[
-			f"{group_by_field} as name",
-			f"{aggregate_function}({value_field}) as count",
+			f'"{group_by_field}" name',
+			f"{aggregate_function}({value_field}) count",
 		],
 		filters=filters,
 		parent_doctype=chart.parent_document_type,

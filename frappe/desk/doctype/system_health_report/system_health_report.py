@@ -235,7 +235,7 @@ class SystemHealthReport(Document):
 			"Scheduled Job Type",
 			filters={"stopped": 0, "last_execution": ("<", threshold)},
 			fields="*",
-			order_by="last_execution asc",
+			order_by='"last_execution" asc' if frappe.is_oracledb else "last_execution asc",
 		):
 			job_type: ScheduledJobType = frappe.get_doc(doctype="Scheduled Job Type", **job_type)
 			if job_type.is_event_due():

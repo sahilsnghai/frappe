@@ -391,7 +391,7 @@ def get_communication_data(
 def get_assignments(dt, dn):
 	return frappe.get_all(
 		"ToDo",
-		fields=["name", '"allocated_to" as owner' if frappe.is_oracledb else "allocated_to as owner", "description", "status"],
+		fields=["name", '"allocated_to" owner' if frappe.is_oracledb else "allocated_to as owner", "description", "status"],
 		filters={
 			"reference_type": dt,
 			"reference_name": dn,

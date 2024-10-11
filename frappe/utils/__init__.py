@@ -833,6 +833,8 @@ def parse_json(val):
 	Parses json if string else return
 	"""
 	if isinstance(val, str):
+		if val[0] == "'" and val[-1] == "'":
+			val = val[1:-1]
 		val = json.loads(val)
 	if isinstance(val, dict):
 		val = frappe._dict(val)

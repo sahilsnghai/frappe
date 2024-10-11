@@ -149,7 +149,7 @@ class FormMeta(Meta):
 				"Client Script",
 				filters={"dt": self.name, "enabled": 1},
 				fields=["name", "script", "view"],
-				order_by='"creation" asc',
+				order_by='"creation" asc' if frappe.is_oracledb else "creation asc",
 			)
 			or ""
 		)
