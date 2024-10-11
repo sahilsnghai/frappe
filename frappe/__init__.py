@@ -1594,9 +1594,6 @@ def get_installed_apps(*, _ensure_on_bench=False) -> list[str]:
 		print(_installed_apps)
 		_installed_apps = str(_installed_apps)
 
-	if _installed_apps and _installed_apps[0] == "'" and _installed_apps[-1] == "'":
-		_installed_apps = _installed_apps[1:-1]
-
 	installed = json.loads(_installed_apps or "[]")
 
 	if _ensure_on_bench:

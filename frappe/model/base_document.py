@@ -567,12 +567,15 @@ class BaseDocument:
 
 				_values = []
 				for d_columns, d_value in d.items():
-					d_value = conversion_column_value(d_value)
-					if (metadata_cols := meta.get_field(d_columns)) \
+					if d_value is None:
+						d_value = 'NULL'
+					elif (metadata_cols := meta.get_field(d_columns)) \
 										and metadata_cols.fieldtype in ('Code', 'Text Editor',
 																		'Markdown Editor',
 																		'HTML Editor', 'Text'):
 						d_value = to_clob_oracle(data=d_value, chunks=3000)
+					else:
+						d_value = conversion_column_value(d_value)
 					_values.append(d_value)
 
 				# TODO: handle conflict

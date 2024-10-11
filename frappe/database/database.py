@@ -276,8 +276,6 @@ class Database:
 			if values:
 				self._cursor.execute(query, values)
 			else:
-				if 'in' in query and 'NULL' in query:
-					pass
 				query = re.sub("!= NULL", "is not NULL", query)
 				print(f"[Query]: {sqlparse.format(query, indent=4)}")
 				self._cursor.execute(query)

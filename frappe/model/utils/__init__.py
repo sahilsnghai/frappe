@@ -154,5 +154,9 @@ def is_single_doctype(doctype: str) -> bool:
 
 
 def to_clob_oracle(data: str, chunks: int = 1000):
-	return " || ".join("to_clob('{text}')".format(text=data[i:i + chunks].replace("'", "''"))
+	if isinstance(data, int):
+		return f"to_clob('{data}')"
+	if not data:
+		return "to_clob('')"
+	return " || ".join("to_clob('{text}')".format(text=data[i:i + chunks].replace("'", "''").replace("''''", "''"))
 					   for i in range(0, len(data), chunks))

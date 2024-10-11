@@ -5,7 +5,6 @@
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
- "for_user": "",
  "hide_custom": 0,
  "icon": "integration",
  "idx": 0,
@@ -21,7 +20,6 @@
    "type": "Card Break"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Dropbox Settings",
@@ -32,7 +30,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "S3 Backup Settings",
@@ -43,7 +40,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Google Drive",
@@ -62,7 +58,6 @@
    "type": "Card Break"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Google Settings",
@@ -73,7 +68,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Google Contacts",
@@ -84,7 +78,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Google Calendar",
@@ -95,7 +88,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Google Drive",
@@ -114,7 +106,6 @@
    "type": "Card Break"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Webhook",
@@ -125,7 +116,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Slack Webhook URL",
@@ -136,7 +126,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "SMS Settings",
@@ -155,7 +144,6 @@
    "type": "Card Break"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Social Login Key",
@@ -166,7 +154,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "LDAP Settings",
@@ -177,7 +164,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "OAuth Client",
@@ -188,7 +174,6 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
    "label": "OAuth Provider Settings",
@@ -199,37 +184,35 @@
    "type": "Link"
   },
   {
-    "hidden": 0,
-    "is_query_report": 0,
-    "label": "Push Notifications",
-    "link_count": 1,
-    "link_type": "DocType",
-    "onboard": 0,
-    "type": "Card Break"
-   },
-   {
-    "hidden": 0,
-    "is_query_report": 0,
-    "label": "Push Notification Settings",
-    "link_count": 0,
-    "link_to": "Push Notification Settings",
-    "link_type": "DocType",
-    "onboard": 0,
-    "type": "Link"
-   }
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Push Notifications",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Push Notification Settings",
+   "link_count": 0,
+   "link_to": "Push Notification Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
  ],
- "modified": "2024-02-28 10:47:38.188832",
+ "modified": "2024-10-11 17:26:52.812303",
  "modified_by": "Administrator",
  "module": "Integrations",
  "name": "Integrations",
  "number_cards": [],
  "owner": "Administrator",
- "parent_page": "",
  "public": 1,
  "quick_lists": [],
- "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 20.0,
+ "sequence_id": 4.0,
  "shortcuts": [],
  "title": "Integrations"
 }
