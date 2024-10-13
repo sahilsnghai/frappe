@@ -14,7 +14,7 @@ def setup_database(force, verbose=None, no_mariadb_socket=False):
 	if frappe.conf.db_type == "postgres":
 		import frappe.database.postgres.setup_db
 
-		return frappe.database.postgres.setup_db.setup_database(force, source_sql, verbose)
+		return frappe.database.postgres.setup_db.setup_database(force, verbose)
 	elif frappe.conf.db_type == "oracledb":
 		import frappe.database.oracledb.setup_db
 		return frappe.database.oracledb.setup_db.setup_database()
@@ -33,6 +33,9 @@ def bootstrap_database(db_name, verbose=None, source_sql=None):
 		import frappe.database.postgres.setup_db
 
 		return frappe.database.postgres.setup_db.bootstrap_database(db_name, verbose, source_sql)
+	elif frappe.conf.db_type == "oracledb":
+		import frappe.database.oracledb.setup_db
+		return frappe.database.oracledb.setup_db.bootstrap_database(verbose=verbose, source_sql=source_sql)
 	else:
 		import frappe.database.mariadb.setup_db
 

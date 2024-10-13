@@ -488,6 +488,19 @@ def database(context, extra_args):
 	_enter_console(extra_args=extra_args)
 
 
+@click.command("oracledb", context_settings=EXTRA_ARGS_CTX)
+@click.argument("extra_args", nargs=-1)
+@pass_context
+def oracledb(context, extra_args):
+	"""
+	Enter into oracledb console for a given site.
+	"""
+	site = get_site(context)
+	frappe.init(site=site)
+	frappe.conf.db_type = "oracledb"
+	_enter_console(extra_args=extra_args)
+
+
 @click.command("mariadb", context_settings=EXTRA_ARGS_CTX)
 @click.argument("extra_args", nargs=-1)
 @pass_context
@@ -520,6 +533,8 @@ def _enter_console(extra_args=None):
 
 	if frappe.conf.db_type == "mariadb":
 		os.environ["MYSQL_HISTFILE"] = os.path.abspath(get_site_path("logs", "mariadb_console.log"))
+	elif frappe.conf.db_type == "oracledb":
+		os.environ["ORACLEDB_HISTORY"] = os.path.abspath(get_site_path("logs", "oracledb_console.log"))
 	else:
 		os.environ["PSQL_HISTORY"] = os.path.abspath(get_site_path("logs", "postgresql_console.log"))
 
@@ -529,6 +544,7 @@ def _enter_console(extra_args=None):
 		user=frappe.conf.db_name,
 		password=frappe.conf.db_password,
 		db_name=frappe.conf.db_name,
+		service_name=frappe.conf.db_service_name,
 		extra=list(extra_args) if extra_args else [],
 	)
 	if not bin:
@@ -1183,6 +1199,7 @@ commands = [
 	import_doc,
 	make_app,
 	create_patch,
+	oracledb,
 	mariadb,
 	postgres,
 	request,

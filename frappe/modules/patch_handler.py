@@ -225,6 +225,9 @@ def executed(patchmodule):
 	if patchmodule.startswith("finally:"):
 		# patches are saved without the finally: tag
 		patchmodule = patchmodule.replace("finally:", "")
+	if frappe.is_oracledb:
+		return frappe.db.get_value("Patch Log",
+								   {'DBMS_LOB.SUBSTR(tabPatch_Log."patch", 4000, 1)': patchmodule, "skipped": 0})
 	return frappe.db.get_value("Patch Log", {"patch": patchmodule, "skipped": 0})
 
 

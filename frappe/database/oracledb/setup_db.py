@@ -27,7 +27,6 @@ def setup_database(verbose=False, source_sql=None):
 	cursor.execute(f"ALTER SESSION SET CURRENT_SCHEMA = {frappe.conf.db_name}")
 	cursor.close()
 
-	bootstrap_database(verbose, source_sql=source_sql)
 
 
 def get_root_connection():

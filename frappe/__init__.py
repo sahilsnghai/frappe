@@ -1562,6 +1562,8 @@ def get_all_apps(with_internal_apps=True, sites_path=None):
 	if not sites_path:
 		sites_path = local.sites_path
 
+	print(f"=>> {os.getcwd()}")
+
 	apps = get_file_items(os.path.join(sites_path, "apps.txt"), raise_not_found=True)
 
 	if with_internal_apps:

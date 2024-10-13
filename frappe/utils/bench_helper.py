@@ -27,6 +27,9 @@ def get_app_groups() -> dict[str, click.Group]:
 	for app in get_apps():
 		if app_commands := get_app_commands(app):
 			commands |= app_commands
+
+	for key, values in commands.items():
+		print(key, " : ", values)
 	return dict(frappe=click.group(name="frappe", commands=commands)(app_group))
 
 

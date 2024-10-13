@@ -355,11 +355,23 @@ def get_definition(fieldtype, precision=None, length=None):
 
 def add_column(doctype, column_name, fieldtype, precision=None, length=None, default=None, not_null=False):
 	frappe.db.commit()
-	query = "alter table `tab{}` add column if not exists {} {}".format(
-		doctype,
-		column_name,
-		get_definition(fieldtype, precision, length),
-	)
+	if frappe.is_oracledb:
+		# query = f'alter table "tab{doctype}" add column if not exists {column_name} {get_definition(fieldtype, precision, length)}'
+
+		query = f"""
+		DECLARE
+			v_count NUMBER;
+		BEGIN
+		SELECT COUNT(*) INTO v_count
+		FROM USER_TAB_COLUMNS
+		WHERE TABLE_NAME = 'tab{doctype}' AND COLUMN_NAME = '{column_name}';
+		IF v_count = 0 THEN
+		execute immediate 'ALTER TABLE "tab{doctype}" ADD ({column_name}  {get_definition(fieldtype, precision, length)})';
+		END IF;
+		END;
+		"""
+	else:
+		query = f"alter table `tab{doctype}` add column if not exists {column_name} {get_definition(fieldtype, precision, length)}"
 
 	if not_null:
 		query += " not null"

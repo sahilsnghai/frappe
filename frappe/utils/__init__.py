@@ -450,6 +450,7 @@ def execute_in_shell(cmd, verbose=False, low_priority=False, check_exit_code=Fal
 
 	if isinstance(cmd, list):
 		# ensure it's properly escaped; only a single string argument executes via shell
+		print("1 :> ", cmd)
 		cmd = shlex.join(cmd)
 
 	with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
@@ -462,6 +463,8 @@ def execute_in_shell(cmd, verbose=False, low_priority=False, check_exit_code=Fal
 
 		if low_priority:
 			kwargs["preexec_fn"] = lambda: os.nice(10)
+
+		print("2 :> ", cmd)
 
 		p = Popen(cmd, **kwargs)
 		exit_code = p.wait()

@@ -310,16 +310,6 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Lumenore Test",
-   "link_count": 0,
-   "link_to": "LumenoreNewDoctype",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
   }
  ],
  "modified": "2024-10-11 17:26:52.035587",
@@ -353,11 +343,6 @@
   {
    "label": "Assignment Rule",
    "link_to": "Assignment Rule",
-   "type": "DocType"
-  },
-  {
-   "label": "Lumenore Test",
-   "link_to": "LumenoreNewDoctype",
    "type": "DocType"
   }
  ],
