@@ -7,4 +7,7 @@ import frappe
 
 
 def execute():
-	frappe.db.sql(""" ALTER TABLE `tabSeries` MODIFY current BIGINT """)
+    if frappe.is_oracledb:
+        frappe.db.sql(f'ALTER TABLE {frappe.conf.db_name}."tabSeries" MODIFY current NUMBER(19)')
+    else:
+	    frappe.db.sql(""" ALTER TABLE `tabSeries` MODIFY current BIGINT """)

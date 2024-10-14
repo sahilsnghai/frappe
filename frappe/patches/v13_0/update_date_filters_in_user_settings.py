@@ -5,19 +5,20 @@ from frappe.model.utils.user_settings import sync_user_settings, update_user_set
 
 
 def execute():
-	users = frappe.db.sql("select distinct(user) from `__UserSettings`", as_dict=True)
+	if frappe.is_oracledb:
+		frappe.db.sql(
+			f"""SELECT DISTINCT("user") FROM {frappe.conf.db_name}."__UserSettings" """,
+			as_dict=True
+		)
+		query = """SELECT * FROM {db_name}."__UserSettings" WHERE "user"='{user}'""".format(
+			db_name=frappe.conf.db_name, user='{user}')
+
+	else:
+		users = frappe.db.sql("select distinct(user) from `__UserSettings`", as_dict=True)
+		query = """ select * from `__UserSettings` where user='{user}' """
 
 	for user in users:
-		user_settings = frappe.db.sql(
-			f"""
-			select
-				* from `__UserSettings`
-			where
-				user='{user.user}'
-		""",
-			as_dict=True,
-		)
-
+		user_settings = frappe.db.sql(query=query.format(user=user.user), as_dict=True)
 		for setting in user_settings:
 			data = frappe.parse_json(setting.get("data"))
 			if data:

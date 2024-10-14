@@ -11,11 +11,18 @@ def execute():
 
 	for user in users:
 		# get user_settings for each user
-		settings = frappe.db.sql(
-			f"select * from `__UserSettings` \
-			where user={frappe.db.escape(user.user)}",
-			as_dict=True,
-		)
+		if frappe.is_oracledb:
+			settings = frappe.db.sql(
+				f"""select * from {frappe.conf.db_name}."__UserSettings"
+				where "user"={frappe.db.escape(user.user)}""",
+				as_dict=True,
+			)
+		else:
+			settings = frappe.db.sql(
+				f"select * from `__UserSettings` \
+				where user={frappe.db.escape(user.user)}",
+				as_dict=True,
+			)
 
 		# traverse through each doctype's settings for a user
 		for d in settings:

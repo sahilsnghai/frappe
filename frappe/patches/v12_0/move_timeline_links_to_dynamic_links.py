@@ -2,17 +2,30 @@ import frappe
 
 
 def execute():
-	communications = frappe.db.sql(
-		"""
-		SELECT
-			`tabCommunication`.name, `tabCommunication`.creation, `tabCommunication`.modified,
-			`tabCommunication`.modified_by,`tabCommunication`.timeline_doctype, `tabCommunication`.timeline_name,
-			`tabCommunication`.link_doctype, `tabCommunication`.link_name
-		FROM `tabCommunication`
-		WHERE `tabCommunication`.communication_medium='Email'
-	""",
-		as_dict=True,
-	)
+	if frappe.is_oracledb:
+		communications = frappe.db.sql(
+			f"""
+			SELECT
+				com."name", com."creation", com."modified",
+				com."modified_by", com."timeline_doctype", com."timeline_name",
+				com."link_doctype", com."link_name"
+			FROM {frappe.conf.db_name}."tabCommunication" com
+			WHERE com."communication_medium" = 'Email'
+			""",
+			as_dict=True,
+		)
+	else:
+		communications = frappe.db.sql(
+			"""
+			SELECT
+				`tabCommunication`.name, `tabCommunication`.creation, `tabCommunication`.modified,
+				`tabCommunication`.modified_by,`tabCommunication`.timeline_doctype, `tabCommunication`.timeline_name,
+				`tabCommunication`.link_doctype, `tabCommunication`.link_name
+			FROM `tabCommunication`
+			WHERE `tabCommunication`.communication_medium='Email'
+		""",
+			as_dict=True,
+		)
 
 	name = 1000000000
 	values = []
@@ -50,14 +63,24 @@ def execute():
 			)
 
 		if values and (count % 10000 == 0 or count == len(communications) - 1):
-			frappe.db.sql(
-				"""
-				INSERT INTO `tabCommunication Link`
-					(`idx`, `name`, `parentfield`, `parenttype`, `parent`, `link_doctype`, `link_name`, `creation`,
-					`modified`, `modified_by`)
-				VALUES {}
-			""".format(", ".join([d for d in values]))
-			)
+			if frappe.is_oracledb:
+				frappe.db.sql(
+					f"""
+					INSERT INTO {frappe.conf.db_name}."tabCommunication Link"
+						("idx", "name", "parentfield", "parenttype", "parent", "link_doctype", "link_name", "creation",
+						"modified", "modified_by")
+					VALUES ({", ".join([d for d in values])})
+					"""
+				)
+			else:
+				frappe.db.sql(
+					"""
+					INSERT INTO `tabCommunication Link`
+						(`idx`, `name`, `parentfield`, `parenttype`, `parent`, `link_doctype`, `link_name`, `creation`,
+						`modified`, `modified_by`)
+					VALUES {}
+				""".format(", ".join([d for d in values]))
+				)
 
 			values = []
 

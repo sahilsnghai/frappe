@@ -400,7 +400,7 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 		return {
 			"mariadb": MariaDBDatabase.default_port,  # 3306
 			"postgres": 5432,
-			"oracledb": 1521
+			"oracledb": 1522
 		}[db_type]
 
 	config["redis_queue"] = (

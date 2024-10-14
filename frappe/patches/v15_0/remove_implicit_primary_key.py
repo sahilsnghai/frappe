@@ -25,6 +25,8 @@ def execute():
 
 	This patch converts them back to varchar.
 	"""
+
+	print("\n\nhello world runnng patches.....\n\n")
 	for doctype in possible_log_types:
 		if (
 			frappe.db.exists("DocType", doctype)
@@ -40,7 +42,14 @@ def execute():
 
 
 def _is_implicit_int_pk(doctype: str) -> bool:
-	query = f"""select data_type FROM information_schema.columns where column_name = 'name' and table_name = 'tab{doctype}'"""
+	if frappe.is_oracledb:
+		query = f"""
+			SELECT "data_type"
+			FROM all_tab_columns
+			WHERE column_name = 'name' AND table_name = 'tab{doctype}' and owner = '{frappe.conf.db_name}'
+		"""
+	else:
+		query = f"""select data_type FROM information_schema.columns where column_name = 'name' and table_name = 'tab{doctype}'"""
 	values = ()
 	if frappe.db.db_type == "mariadb":
 		query += " and table_schema = %s"
