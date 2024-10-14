@@ -5,28 +5,55 @@ import frappe
 
 
 def execute():
-	frappe.reload_doc("core", "doctype", "DocField")
+    frappe.reload_doc("core", "doctype", "DocField")
 
-	if frappe.db.has_column("DocField", "show_days"):
-		frappe.db.sql(
+    if frappe.is_oracledb:
+        if frappe.db.has_column("DocField", "show_days"):
+            frappe.db.sql(
+                f"""
+				UPDATE
+					{frappe.conf.db_name}."tabDocField"
+				SET
+					"hide_days" = 1 WHERE "show_days" = 0
+				"""
+            )
+            frappe.db.sql_ddl(
+                f'ALTER TABLE {frappe.conf.db_name}."tabDocField" DROP COLUMN "show_days"'
+            )
+
+        if frappe.db.has_column("DocField", "show_seconds"):
+            frappe.db.sql(
+                f"""
+				UPDATE
+					{frappe.conf.db_name}."tabDocField"
+				SET
+					"hide_seconds" = 1 WHERE "show_seconds" = 0
+				"""
+            )
+            frappe.db.sql_ddl(
+                f'ALTER TABLE {frappe.conf.db_name}."tabDocField" DROP COLUMN "show_seconds"'
+            )
+    else:
+
+        if frappe.db.has_column("DocField", "show_days"):
+            frappe.db.sql(
+                """
+				UPDATE
+					tabDocField
+				SET
+					hide_days = 1 WHERE show_days = 0
 			"""
-			UPDATE
-				tabDocField
-			SET
-				hide_days = 1 WHERE show_days = 0
-		"""
-		)
-		frappe.db.sql_ddl("alter table tabDocField drop column show_days")
-
-	if frappe.db.has_column("DocField", "show_seconds"):
-		frappe.db.sql(
+            )
+            frappe.db.sql_ddl("alter table tabDocField drop column show_days")
+        if frappe.db.has_column("DocField", "show_seconds"):
+            frappe.db.sql(
+                """
+				UPDATE
+					tabDocField
+				SET
+					hide_seconds = 1 WHERE show_seconds = 0
 			"""
-			UPDATE
-				tabDocField
-			SET
-				hide_seconds = 1 WHERE show_seconds = 0
-		"""
-		)
-		frappe.db.sql_ddl("alter table tabDocField drop column show_seconds")
+            )
+            frappe.db.sql_ddl("alter table tabDocField drop column show_seconds")
 
-	frappe.clear_cache(doctype="DocField")
+    frappe.clear_cache(doctype="DocField")

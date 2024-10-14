@@ -7,8 +7,13 @@ import frappe
 def execute():
 	"""Enable all the existing Client script"""
 
-	frappe.db.sql(
+	if frappe.is_oracledb:
+		frappe.db.sql(
+    		f"""UPDATE {frappe.conf.db_name}."tabClient Script" SET "enabled" = 1"""
+		)
+	else:
+		frappe.db.sql(
+			"""
+			UPDATE `tabClient Script` SET enabled=1
 		"""
-		UPDATE `tabClient Script` SET enabled=1
-	"""
-	)
+		)

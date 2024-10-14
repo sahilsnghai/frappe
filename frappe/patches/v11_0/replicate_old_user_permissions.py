@@ -26,7 +26,16 @@ def execute():
 			"User Permission", "skip_for_doctype"
 		):
 			doctype_to_skip = "\n".join(doctype_to_skip)
-			frappe.db.sql(
+			if frappe.is_oracledb:
+				frappe.db.sql(
+			    f"""
+			    update {frappe.conf.db_name}."tabUser Permission"
+			    set "skip_for_doctype" = '{doctype_to_skip}'
+			    where "user" = '{key[1]}' and "allow" = '{key[0]}'
+			    """
+			)
+			else:
+				frappe.db.sql(
 				"""
 				update `tabUser Permission`
 				set skip_for_doctype = %s

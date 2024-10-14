@@ -24,7 +24,17 @@ def setup_incoming_email_port_in_email_domains():
 			)
 
 			# update incoming email port in all
-			frappe.db.sql(
+			if frappe.is_oracledb:
+				frappe.db.sql(
+				f"""
+				UPDATE "tabEmail Account"
+				SET "incoming_port" = '{domain.incoming_port}'
+				WHERE "domain" = '{domain.name}'
+				""",
+				[],
+			)
+			else:
+				frappe.db.sql(
 				"""update `tabEmail Account` set incoming_port=%s where domain = %s""",
 				(domain.incoming_port, domain.name),
 			)

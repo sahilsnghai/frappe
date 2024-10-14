@@ -13,18 +13,40 @@ def execute():
 	frappe.reload_doc("desk", "doctype", "event")
 
 	# Initially Daily Events had option to choose days, but now Weekly does, so just changing from Daily -> Weekly does the job
-	frappe.db.sql(
-		"""UPDATE `tabEvent` SET `tabEvent`.repeat_on='Weekly' WHERE `tabEvent`.repeat_on='Every Day'"""
-	)
-	frappe.db.sql(
-		"""UPDATE `tabEvent` SET `tabEvent`.repeat_on='Weekly' WHERE `tabEvent`.repeat_on='Every Week'"""
-	)
-	frappe.db.sql(
-		"""UPDATE `tabEvent` SET `tabEvent`.repeat_on='Monthly' WHERE `tabEvent`.repeat_on='Every Month'"""
-	)
-	frappe.db.sql(
-		"""UPDATE `tabEvent` SET `tabEvent`.repeat_on='Yearly' WHERE `tabEvent`.repeat_on='Every Year'"""
-	)
+	if frappe.is_oracledb:
+		frappe.db.sql(
+			f"""
+			UPDATE {frappe.conf.db_name}."tabEvent" SET "repeat_on" = 'Weekly' WHERE "repeat_on" = 'Every Day'
+			"""
+		)
+		frappe.db.sql(
+			f"""
+			UPDATE {frappe.conf.db_name}."tabEvent" SET "repeat_on" = 'Weekly' WHERE "repeat_on" = 'Every Week'
+			"""
+		)
+		frappe.db.sql(
+			f"""
+			UPDATE {frappe.conf.db_name}."tabEvent" SET "repeat_on" = 'Monthly' WHERE "repeat_on" = 'Every Month'
+			"""
+		)
+		frappe.db.sql(
+			f"""
+			UPDATE {frappe.conf.db_name}."tabEvent" SET "repeat_on" = 'Yearly' WHERE "repeat_on" = 'Every Year'
+			"""
+		)
+	else:
+		frappe.db.sql(
+			"""UPDATE `tabEvent` SET `tabEvent`.repeat_on='Weekly' WHERE `tabEvent`.repeat_on='Every Day'"""
+		)
+		frappe.db.sql(
+			"""UPDATE `tabEvent` SET `tabEvent`.repeat_on='Weekly' WHERE `tabEvent`.repeat_on='Every Week'"""
+		)
+		frappe.db.sql(
+			"""UPDATE `tabEvent` SET `tabEvent`.repeat_on='Monthly' WHERE `tabEvent`.repeat_on='Every Month'"""
+		)
+		frappe.db.sql(
+			"""UPDATE `tabEvent` SET `tabEvent`.repeat_on='Yearly' WHERE `tabEvent`.repeat_on='Every Year'"""
+		)
 
 	for weekly_event in weekly_events:
 		# Set WeekDay based on the starts_on so that event can repeat Weekly

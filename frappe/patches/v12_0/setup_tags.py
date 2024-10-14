@@ -16,9 +16,12 @@ def execute():
 		if not frappe.db.count(doctype.name) or not frappe.db.has_column(doctype.name, "_user_tags"):
 			continue
 
-		for _user_tags in frappe.db.sql(
-			f"select `name`, `_user_tags` from `tab{doctype.name}`", as_dict=True
-		):
+		if frappe.is_oracledb:
+			query = f'''SELECT "name", "_user_tags" FROM {frappe.conf.db_name}."tab{doctype.name}"'''
+		else:
+			query = f"select `name`, `_user_tags` from `tab{doctype.name}`"
+
+		for _user_tags in frappe.db.sql( query=query, as_dict=True):
 			if not _user_tags.get("_user_tags"):
 				continue
 

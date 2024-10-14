@@ -5,5 +5,9 @@ import frappe
 
 
 def execute():
-	for col in ("field", "doctype"):
-		frappe.db.sql_ddl(f"alter table `tabSingles` modify column `{col}` varchar(255)")
+	if frappe.is_oracledb:
+		for col in ("field", "doctype"):
+			frappe.db.sql_ddl(f'alter table {frappe.conf.db_name}."tabSingles" modify {col} varchar2(255)')
+	else:
+		for col in ("field", "doctype"):
+			frappe.db.sql_ddl(f"alter table `tabSingles` modify column `{col}` varchar(255)")

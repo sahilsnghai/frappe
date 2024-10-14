@@ -3,12 +3,22 @@ import frappe
 
 def execute():
 	frappe.reload_doctype("Event")
-	# Rename "Cancel" to "Cancelled"
-	frappe.db.sql("""UPDATE tabEvent set event_type='Cancelled' where event_type='Cancel'""")
-	# Move references to Participants table
-	events = frappe.db.sql(
-		"""SELECT name, ref_type, ref_name FROM tabEvent WHERE ref_type!=''""", as_dict=True
-	)
+	if frappe.is_oracledb:
+		# Rename "Cancel" to "Cancelled"
+		frappe.db.sql(f"""UPDATE {frappe.conf.db_name}."tabEvent" set "event_type"='Cancelled' where "event_type"='Cancel'""")
+
+		# Move references to Participants table
+		events = frappe.db.sql(
+			f"""SELECT "name", "ref_type", "ref_name" FROM {frappe.conf.db_name}."tabEvent" WHERE "ref_type" != '' """,
+			as_dict=True
+		)
+	else:
+		# Rename "Cancel" to "Cancelled"
+		frappe.db.sql("""UPDATE tabEvent set event_type='Cancelled' where event_type='Cancel'""")
+		# Move references to Participants table
+		events = frappe.db.sql(
+			"""SELECT name, ref_type, ref_name FROM tabEvent WHERE ref_type!=''""", as_dict=True
+		)
 	for event in events:
 		if event.ref_type and event.ref_name:
 			try:

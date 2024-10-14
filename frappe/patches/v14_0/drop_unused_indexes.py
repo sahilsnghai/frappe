@@ -47,7 +47,10 @@ def drop_index_if_exists(table: str, index: str):
 		return
 
 	try:
-		frappe.db.sql_ddl(f"ALTER TABLE `{table}` DROP INDEX `{index}`")
+		if frappe.is_oracledb:
+			frappe.db.sql_ddl(f'ALTER TABLE {frappe.conf.db_name}."{table}" DROP INDEX "{index}"')
+		else:
+			frappe.db.sql_ddl(f"ALTER TABLE `{table}` DROP INDEX `{index}`")
 	except Exception as e:
 		frappe.log_error("Failed to drop index")
 		click.secho(f"x Failed to drop index {index} from {table}\n {e!s}", fg="red")
