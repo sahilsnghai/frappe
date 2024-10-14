@@ -447,7 +447,10 @@ def get_linked_docs(doctype: str, name: str, linkinfo: dict | None = None) -> di
 		if add_fields := link_context.get("add_fields"):
 			fields += add_fields
 
-		fields = [f"`tab{linked_doctype}`.`{sf.strip()}`" for sf in fields if sf and "`tab" not in sf]
+		if frappe.is_oracledb:
+			fields = [f'tab{linked_doctype}."{sf.strip()}"' for sf in fields if sf and "tab" not in sf]
+		else:
+			fields = [f"`tab{linked_doctype}`.`{sf.strip()}`" for sf in fields if sf and "`tab" not in sf]
 
 		if filters_ctx := link_context.get("filters"):
 			ret = frappe.get_list(doctype=linked_doctype, fields=fields, filters=filters_ctx, order_by=None)
