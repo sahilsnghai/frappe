@@ -9,7 +9,7 @@ from frappe.model.document import Document
 from frappe.model.dynamic_links import get_dynamic_link_map
 from frappe.model.naming import validate_name
 from frappe.model.utils.user_settings import sync_user_settings, update_user_settings_data
-from frappe.query_builder import Field
+from frappe.query_builder import Field, FrappeField
 from frappe.utils.data import sbool
 from frappe.utils.password import rename_password
 from frappe.utils.scheduler import is_scheduler_inactive
@@ -271,9 +271,15 @@ def update_user_settings(old: str, new: str, link_fields: list[dict]) -> None:
 	linked_doctypes = {d.parent for d in link_fields if not d.issingle}
 	UserSettings = frappe.qb.Table("__UserSettings")
 
+	_field = (FrappeField if frappe.is_oracledb else Field)
+
+	_user_field = _field("user", table=UserSettings)
+	_doctype_field = _field("doctype", table=UserSettings)
+	_data_field = _field("data", table=UserSettings)
+
 	user_settings_details = (
 		frappe.qb.from_(UserSettings)
-		.select("user", "doctype", "data")
+		.select(_user_field, _doctype_field, _data_field)
 		.where(UserSettings.data.like(old) & UserSettings.doctype.isin(linked_doctypes))
 		.run(as_dict=True)
 	)
@@ -325,7 +331,12 @@ def rename_eps_records(doctype: str, old: str, new: str) -> None:
 
 
 def rename_parent_and_child(doctype: str, old: str, new: str, meta: "Meta") -> None:
-	frappe.qb.update(doctype).set("name", new).where(Field("name") == old).run()
+	field_name = "name"
+
+	table = frappe.qb.DocType(doctype)
+	field_obj = (FrappeField if frappe.is_oracledb else Field)(field_name, table=table)
+
+	frappe.qb.update(doctype).set( field_obj, new).where(field_obj == old).run()
 
 	update_autoname_field(doctype, new, meta)
 	update_child_docs(old, new, meta)
@@ -336,7 +347,12 @@ def update_autoname_field(doctype: str, new: str, meta: "Meta") -> None:
 	if meta.get("autoname"):
 		field = meta.get("autoname").split(":")
 		if field and field[0] == "field":
-			frappe.qb.update(doctype).set(field[1], new).where(Field("name") == new).run()
+			table = frappe.qb.DocType(doctype)
+			field_name = "name"
+
+			set_field = (FrappeField if frappe.is_oracledb else Field)(field[1], table=table)
+			where_field = (FrappeField if frappe.is_oracledb else Field)(field_name, table=table)
+			frappe.qb.update(doctype).set(set_field, new).where(where_field == new).run()
 
 
 def validate_rename(
@@ -356,7 +372,16 @@ def validate_rename(
 		_SAVE_POINT = f"validate_rename_{frappe.generate_hash(length=8)}"
 		frappe.db.savepoint(_SAVE_POINT)
 
-	exists = frappe.qb.from_(doctype).where(Field("name") == new).for_update().select("name").run(pluck=True)
+	field_name = "name"
+
+	table = frappe.qb.DocType(doctype)
+
+	exists = (frappe.qb.from_(doctype)
+			  .where((FrappeField if frappe.is_oracledb else Field)(field_name, table=table) == new)
+			  .for_update()
+			  .select((FrappeField if frappe.is_oracledb else Field)(field_name, table=table))
+			  )
+	exists = exists.run(pluck=True)
 	exists = exists[0] if exists else None
 
 	if not frappe.db.exists(doctype, old):
@@ -658,10 +683,15 @@ def rename_dynamic_links(doctype: str, old: str, new: str):
 				).run()
 		else:
 			# because the table hasn't been renamed yet!
-			parent = df.parent if df.parent != new else old
+			parent = frappe.qb.DocType(df.parent if df.parent != new else old)
 
-			frappe.qb.update(parent).set(df.fieldname, new).where(
-				(Field(df.options) == doctype) & (Field(df.fieldname) == old)
+			_field_instance = (FrappeField if frappe.is_oracledb else Field)
+
+			_field_name = _field_instance(df.fieldname, table=parent)
+			_field_options = _field_instance(df.options, table=parent)
+
+			frappe.qb.update(parent).set(_field_name, new).where(
+				(_field_options == doctype) & (_field_name == old)
 			).run()
 
 

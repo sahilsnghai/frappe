@@ -259,6 +259,12 @@ class FrappeOracleQueryBuilder(OracleQueryBuilder):
 			columns=",".join(f'"{term.name}"' for term in self._columns)
 		)
 
+	def _where_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
+		return super()._where_sql(quote_char=quote_char, **kwargs)
+
+	def _select_sql(self, **kwargs: Any) -> str:
+		return super()._select_sql(**kwargs)
+
 	def _values_sql(self, **kwargs: Any) -> str:
 
 		values = "),(".join(

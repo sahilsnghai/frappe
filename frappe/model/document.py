@@ -190,7 +190,7 @@ class Document(BaseDocument):
 					{"parent": self.name, "parenttype": self.doctype, "parentfield": df.fieldname},
 					"*",
 					as_dict=True,
-					order_by="idx asc",
+					order_by='"idx" asc' if frappe.is_oracledb else "idx asc",
 					for_update=self.flags.for_update,
 				)
 				or []

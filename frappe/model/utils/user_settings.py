@@ -57,26 +57,32 @@ def sync_user_settings():
 	for key, data in frappe.cache.hgetall("_user_settings").items():
 		key = safe_decode(key)
 		doctype, user = key.split("::")  # WTF?
-		frappe.db.multisql(
-			{
-				"mariadb": """INSERT INTO `__UserSettings`(`user`, `doctype`, `data`)
-				VALUES (%s, %s, %s)
-				ON DUPLICATE key UPDATE `data`=%s""",
-				"postgres": """INSERT INTO `__UserSettings` (`user`, `doctype`, `data`)
-				VALUES (%s, %s, %s)
-				ON CONFLICT ("user", "doctype") DO UPDATE SET `data`=%s""",
-				"oracledb": f"""MERGE INTO {frappe.conf.db_name}."__UserSettings" us
-							USING (SELECT "{user}" user, "{doctype}" doctype, "{data}" data FROM dual) src
-							ON (us."user" = src."user" AND us."doctype" = src."doctype")
-							WHEN MATCHED THEN
-								UPDATE SET us."data" = '{data}'
-							WHEN NOT MATCHED THEN
-								INSERT ("user", "doctype", "data")
-								VALUES ('{user}', '{doctype}', '{data}')""",
-			},
-			(user, doctype, data, data),
-			as_dict=1,
-		)
+
+		if frappe.is_oracledb:
+			frappe.db.sql(
+				f"""MERGE INTO {frappe.conf.db_name}."__UserSettings" us
+						USING (SELECT '{user}' "user", '{doctype}' "doctype", '{data}' "data" FROM dual) src
+						ON (us."user" = src."user" AND us."doctype" = src."doctype")
+						WHEN MATCHED THEN
+							UPDATE SET us."data" = '{data}'
+						WHEN NOT MATCHED THEN
+							INSERT ("user", "doctype", "data")
+							VALUES ('{user}', '{doctype}', '{data}')""",
+				[]
+			)
+		else:
+			frappe.db.multisql(
+				{
+					"mariadb": """INSERT INTO `__UserSettings`(`user`, `doctype`, `data`)
+					VALUES (%s, %s, %s)
+					ON DUPLICATE key UPDATE `data`=%s""",
+					"postgres": """INSERT INTO `__UserSettings` (`user`, `doctype`, `data`)
+					VALUES (%s, %s, %s)
+					ON CONFLICT ("user", "doctype") DO UPDATE SET `data`=%s""",
+				},
+				(user, doctype, data, data),
+				as_dict=1,
+			)
 
 
 @frappe.whitelist()

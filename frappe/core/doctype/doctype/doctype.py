@@ -1397,11 +1397,18 @@ def validate_fields(meta: Meta):
 				)
 
 			if not d.get("__islocal") and frappe.db.has_column(d.parent, d.fieldname):
-				has_non_unique_values = frappe.db.sql(
-					f"""select `{d.fieldname}`, count(*)
-					from `tab{d.parent}` where ifnull(`{d.fieldname}`, '') != ''
-					group by `{d.fieldname}` having count(*) > 1 limit 1"""
-				)
+				if frappe.is_oracledb:
+					has_non_unique_values = frappe.db.sql(
+						f"""select "{d.fieldname}", count(*)
+					from {frappe.conf.db_name}."tab{d.parent}" where ifnull("{d.fieldname}", '') != ''
+					group by "{d.fieldname}" having count(*) > 1 FETCH NEXT 1 ROWS ONLY"""
+					)
+				else:
+					has_non_unique_values = frappe.db.sql(
+						f"""select `{d.fieldname}`, count(*)
+						from `tab{d.parent}` where ifnull(`{d.fieldname}`, '') != ''
+						group by `{d.fieldname}` having count(*) > 1 limit 1"""
+					)
 
 				if has_non_unique_values and has_non_unique_values[0][0]:
 					frappe.throw(
