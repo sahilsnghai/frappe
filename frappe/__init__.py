@@ -10,6 +10,7 @@ be used to build database driven apps.
 
 Read the documentation: https://frappeframework.com/docs
 """
+
 import copy
 import faulthandler
 import functools
@@ -23,6 +24,7 @@ import signal
 import sys
 import traceback
 import warnings
+from collections import defaultdict
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, overload
 
@@ -269,7 +271,7 @@ def init(site: str, sites_path: str = ".", new_site: bool = False, force=False) 
 		}
 	)
 	local.locked_documents = []
-	local.test_objects = {}
+	local.test_objects = defaultdict(list)
 
 	local.site = site
 	local.sites_path = sites_path
@@ -324,19 +326,23 @@ def connect(site: str | None = None, db_name: str | None = None, set_admin_as_us
 	from frappe.database import get_db
 
 	if site:
-		from frappe.utils.deprecations import deprecation_warning
+		from frappe.deprecation_dumpster import deprecation_warning
 
 		deprecation_warning(
+			"unknown",
+			"v17",
 			"Calling frappe.connect with the site argument is deprecated and will be removed in next major version. "
-			"Instead, explicitly invoke frappe.init(site) prior to calling frappe.connect(), if initializing the site is necessary."
+			"Instead, explicitly invoke frappe.init(site) prior to calling frappe.connect(), if initializing the site is necessary.",
 		)
 		init(site)
 	if db_name:
-		from frappe.utils.deprecations import deprecation_warning
+		from frappe.deprecation_dumpster import deprecation_warning
 
 		deprecation_warning(
+			"unknown",
+			"v17",
 			"Calling frappe.connect with the db_name argument is deprecated and will be removed in next major version. "
-			"Instead, explicitly invoke frappe.init(site) with the right config prior to calling frappe.connect(), if necessary."
+			"Instead, explicitly invoke frappe.init(site) with the right config prior to calling frappe.connect(), if necessary.",
 		)
 
 	assert db_name or local.conf.db_user, "site must be fully initialized, db_user missing"
@@ -420,10 +426,11 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 	# Generalized env variable overrides and defaults
 	def db_default_ports(db_type):
 		from frappe.database.mariadb.database import MariaDBDatabase
+		from frappe.database.postgres.database import PostgresDatabase
 
 		return {
 			"mariadb": MariaDBDatabase.default_port,
-			"postgres": 5432,
+			"postgres": PostgresDatabase.default_port,
 		}[db_type]
 
 	config["redis_queue"] = (
@@ -1207,9 +1214,11 @@ def generate_hash(txt: str | None = None, length: int = 56) -> str:
 	import secrets
 
 	if txt:
-		from frappe.utils.deprecations import deprecation_warning
+		from frappe.deprecation_dumpster import deprecation_warning
 
-		deprecation_warning("The `txt` parameter is deprecated and will be removed in a future release.")
+		deprecation_warning(
+			"unknown", "v17", "The `txt` parameter is deprecated and will be removed in a future release."
+		)
 
 	return secrets.token_hex(math.ceil(length / 2))[:length]
 
@@ -1923,6 +1932,9 @@ def import_doc(path):
 def copy_doc(doc: "Document", ignore_no_copy: bool = True) -> "Document":
 	"""No_copy fields also get copied."""
 	import copy
+	from types import MappingProxyType
+
+	from frappe.model.base_document import BaseDocument
 
 	def remove_no_copy_fields(d):
 		for df in d.meta.get("fields", {"no_copy": 1}):
@@ -1934,8 +1946,10 @@ def copy_doc(doc: "Document", ignore_no_copy: bool = True) -> "Document":
 	if not local.flags.in_test:
 		fields_to_clear.append("docstatus")
 
-	if not isinstance(doc, dict):
+	if isinstance(doc, BaseDocument) or hasattr(doc, "as_dict"):
 		d = doc.as_dict()
+	elif isinstance(doc, MappingProxyType):  # global test record
+		d = dict(doc)
 	else:
 		d = doc
 
@@ -2159,18 +2173,7 @@ def are_emails_muted():
 	return flags.mute_emails or cint(conf.get("mute_emails"))
 
 
-def get_test_records(doctype):
-	"""Return list of objects from `test_records.json` in the given doctype's folder."""
-	from frappe.modules import get_doctype_module, get_module_path
-
-	path = os.path.join(
-		get_module_path(get_doctype_module(doctype)), "doctype", scrub(doctype), "test_records.json"
-	)
-	if os.path.exists(path):
-		with open(path) as f:
-			return json.loads(f.read())
-	else:
-		return []
+from frappe.deprecation_dumpster import frappe_get_test_records as get_test_records
 
 
 def format_value(*args, **kwargs):

@@ -2,12 +2,21 @@
 # License: MIT. See LICENSE
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase, UnitTestCase
 
-test_records = frappe.get_test_records("Note")
+test_records = frappe.tests.utils.load_test_records_for("Note")
 
 
-class TestNote(FrappeTestCase):
+class UnitTestNote(UnitTestCase):
+	"""
+	Unit tests for Note.
+	Use this class for testing individual functions and methods.
+	"""
+
+	pass
+
+
+class TestNote(IntegrationTestCase):
 	def insert_note(self):
 		frappe.db.delete("Version")
 		frappe.db.delete("Note")
